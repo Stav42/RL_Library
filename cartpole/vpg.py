@@ -45,28 +45,30 @@ class Simulation:
         self.obs_space_dims = self.env.observation_space.shape[0]
         self.action_space_dims = self.env.action_space.shape[0]
         self.learning_rate = 1e-4
-        self.gamma = 0.9
+        self.gamma = 0.99
         self.eps = 1e-6
 
         self.policy = Policy_Network(self.obs_space_dims, self.action_space_dims)
-        self.pol_optimizer = torch.optim.AdamW(self.net.parameters(), lr=self.learning_rate)
+        self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
 
         self.log_prob_buffer = []
         self.reward_buffer = []
         self.return_buffer = []
         self.episode_time_buffer = []
+        self.episode_steps_buffer = []
 
         self.log_avg_reward = []
         self.log_avg_return = []
 
         self.training_step = 0
+        self.eps_run = 0
 
         self.plot = True
 
 
     def sample_action(self, obs):
-        obs = torch.tensor(np.array(obs))
-        mean, dev = self.policy(obs)
+        obs = torch.tensor(np.array(obs), dtype=torch.float32)
+        mean, dev = self.policy.forward(obs)
         distrib = Normal(mean, dev)
         action = distrib.sample()
         logp = distrib.log_prob(action).sum(axis=-1)
@@ -82,6 +84,8 @@ class Simulation:
         self.flush_post_ep()
         self.log_avg_return.clear()
         self.log_avg_reward.clear()
+        self.episode_steps_buffer.clear()
+        self.episode_time_buffer.clear()
 
     def get_return_buffer(self):
         rewards = np.flip(np.array(self.reward_buffer))
@@ -102,9 +106,9 @@ class Simulation:
     
     def update(self):
         loss = 0
-        log_prob = torch.tensor(np.array(self.log_prob_buffer))
+        log_prob = self.log_prob_buffer
         for i in range(len(self.reward_buffer)):
-            loss+=log_prob*self.return_buffer[i]
+            loss+=self.log_prob_buffer[i]*self.return_buffer[i]
         loss*=-1
         self.pol_optimizer.zero_grad()
         loss.backward()
@@ -116,15 +120,43 @@ class Simulation:
         mean_ret = np.array(self.return_buffer).mean()
         self.log_avg_return.append(mean_ret)
 
+    def moving_average(self, Y, n):
+        Y_mva = []
+        for index, y in enumerate(Y):
+            if index>n:
+                sum = 0
+                for i in range(n):
+                    sum+=Y[index-i]
+                sum/=n
+                Y_mva.append(sum)
+            else:
+                sum = 0
+                for i in range(index+1):
+                    sum+=Y[index-i]
+                sum/=(index+1)
+                Y_mva.append(sum)
+
+        return Y_mva
+
+                
+
     def plot_training(self):
-        fig, ax = plt.subplots(nrows=1, ncols=2, sharex=True)
-        X = range(self.training_step)
+        fig, ax = plt.subplots(nrows=1, ncols=3, sharex=True)
+        X = range(self.eps_run)
         Y = self.log_avg_return
-        ax[0, 0].plot(X, Y)
+        Y = self.moving_average(Y, n=50)
+        ax[0].plot(X, Y)
         Y = self.log_avg_reward
-        ax[0, 1].plot(X, Y)
-        ax[0, 0].set_ylabel('Returns')
-        ax[0, 1].set_ylabel('Rewards')
+        Y = self.moving_average(Y, n=50)
+        ax[1].plot(X, Y)
+        Y = self.episode_steps_buffer
+        Y = self.moving_average(Y, n=50)
+        ax[2].plot(X, Y)
+        ax[0].set_ylabel('Returns')
+        ax[0].set_ylim(bottom=0, top=15)
+        ax[1].set_ylabel('Rewards')
+        ax[2].set_ylabel("Episode Length")
+        
         plt.show()
         
 
@@ -135,23 +167,26 @@ class Simulation:
         train_time = time.time()
 
         for episode in range(num_eps):
-
             obs, info = self.env.reset(seed=seed)
             done = False
             step_time = 0
             episode_start = time.time()
+            num_steps = 0
             while not done:
                 self.training_step += 1
+                num_steps+=1
                 action = self.sample_action(obs)
                 obs, reward, terminated, truncated, info = self.env.step(action)
                 self.reward_buffer.append(reward)
                 
                 step_dur = time.time()-episode_start
                 episode_start = time.time()
-                step_time+=episode_dur
+                step_time+=step_dur
 
                 done = terminated or truncated
+            self.episode_steps_buffer.append(num_steps)
             step_time/=self.training_step
+            self.eps_run+=1
 
             episode_time = time.time()
             episode_dur = train_time - episode_time
@@ -164,18 +199,19 @@ class Simulation:
             self.log_data()
             self.flush_post_ep()
 
-            if episode % 100 == 0:
+            if (episode+1) % 100 == 0:
                 avg_reward = self.log_avg_reward[-1]
                 print("Episode:", episode, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1])
 
-            if episode % 1000 == 0 and self.plot:
+            if (episode+1) % 1000 == 0 and self.plot:
                 self.plot_training()
             
 
-def main():
 
-    sim = Simulation()
-    for seed in range(4):
-        sim.train(num_eps=3000, seed=seed)
-        sim.plot_training()
-        sim.flush_post_iter()
+sim = Simulation()
+print("Simulation instantiated")
+
+for seed in range(4):
+    sim.train(num_eps=3000, seed=seed)
+    sim.plot_training()
+    # sim.flush_post_iter()
