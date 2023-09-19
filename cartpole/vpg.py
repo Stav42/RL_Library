@@ -54,6 +54,7 @@ class Simulation:
         self.log_prob_buffer = []
         self.reward_buffer = []
         self.return_buffer = []
+        self.episode_time_buffer = []
 
         self.log_avg_reward = []
         self.log_avg_return = []
@@ -131,16 +132,31 @@ class Simulation:
 
     def train(self, num_eps, seed=1):
         
+        train_time = time.time()
+
         for episode in range(num_eps):
-            self.training_step += 1
+
             obs, info = self.env.reset(seed=seed)
             done = False
+            step_time = 0
+            episode_start = time.time()
             while not done:
+                self.training_step += 1
                 action = self.sample_action(obs)
                 obs, reward, terminated, truncated, info = self.env.step(action)
                 self.reward_buffer.append(reward)
+                
+                step_dur = time.time()-episode_start
+                episode_start = time.time()
+                step_time+=episode_dur
 
                 done = terminated or truncated
+            step_time/=self.training_step
+
+            episode_time = time.time()
+            episode_dur = train_time - episode_time
+            train_time = time.time()
+            self.episode_time_buffer.append(episode_dur)
 
             ## Update 
             self.get_return_buffer()
