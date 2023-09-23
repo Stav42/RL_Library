@@ -107,10 +107,6 @@ class Simulation:
     def save_model(self, path):
         path = path + "/Cartpole_A2C.pth"
         torch.save(self.policy.policy_net.state_dict(), path)
-
-    def save_value(self, path):
-        path = path + "/Cartpole_A2C_val.pth"
-        torch.save(self.value.value_net.state_dict(), path)
     
     def flush_post_ep(self):
         self.log_prob_buffer.clear()
@@ -222,13 +218,6 @@ class Simulation:
             gae_buffer[l-i-1] = gae
         self.gae_buffer = gae_buffer
         return self.gae_buffer
-    
-    def load_weights(self, pol=None, val=None):
-        if pol:
-            self.policy.policy_net.load_state_dict(torch.load(pol))
-        if val:
-            self.value.value_net.load_state_dict(torch.load(val))
-
 
     def plot_training(self):
         fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True)
@@ -296,7 +285,7 @@ class Simulation:
             ## Update 
             self.get_return_buffer()
             self.get_td_buffer()
-            self.get_gae_buffer(lmbda=0.99)
+            self.get_gae_buffer(lmbda=0.98)
             self.policy_update()
             self.value_update()
             self.log_data()
@@ -309,18 +298,3 @@ class Simulation:
             if (episode+1) % 1000 == 0 and self.plot:
                 self.plot_training()
             
-
-
-sim = Simulation()
-pol = "/Users/stav.42/RL_Library/cartpole/weights/A2C.pth"
-# sim.load_weights(pol=pol)
-print("Simulation instantiated")
-
-for seed in range(8):
-    sim.train(num_eps=3000, seed=seed)
-    sim.plot_training()
-    sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-    sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
-    # sim.flush_post_iter()
-sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")

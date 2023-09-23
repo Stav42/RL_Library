@@ -69,7 +69,7 @@ class Simulation:
 sim = Simulation()
 print("Simulation instantiated")
 
-path = "weights/Cartpole_AC.pth"
+path = "weights/Cartpole_A2C.pth"
 sim.load_model(path)
 sim.run(100)
         
