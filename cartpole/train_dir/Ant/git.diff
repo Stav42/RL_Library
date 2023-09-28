@@ -1,0 +1,43 @@
+diff --git a/cartpole/a2c.py b/cartpole/a2c.py
+index bffebba..7fcec68 100644
+--- a/cartpole/a2c.py
++++ b/cartpole/a2c.py
+@@ -319,8 +319,8 @@ print("Simulation instantiated")
+ for seed in range(8):
+     sim.train(num_eps=3000, seed=seed)
+     sim.plot_training()
+-    sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+-    sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
++    # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
++    # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+     # sim.flush_post_iter()
+-sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+-sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
++# sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
++# sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+diff --git a/cartpole/ppo/ppo_parallel.py b/cartpole/ppo/ppo_parallel.py
+index 0fb4885..47a31c6 100644
+--- a/cartpole/ppo/ppo_parallel.py
++++ b/cartpole/ppo/ppo_parallel.py
+@@ -340,6 +340,7 @@ pol = "/Users/stav.42/RL_Library/cartpole/weights/PPO.pth"
+ print("Simulation instantiated")
+ 
+ for seed in range(8):
++    # add seeds
+     sim.train(num_eps=3000, seed=seed)
+     sim.plot_training()
+     sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+diff --git a/cartpole/test.py b/cartpole/test.py
+index 1e1eec6..164de3b 100644
+--- a/cartpole/test.py
++++ b/cartpole/test.py
+@@ -69,7 +69,7 @@ class Simulation:
+ sim = Simulation()
+ print("Simulation instantiated")
+ 
+-path = "weights/Cartpole_A2C.pth"
++path = "weights/Cartpole_PPO.pth"
+ sim.load_model(path)
+ sim.run(100)
+         
+\ No newline at end of file

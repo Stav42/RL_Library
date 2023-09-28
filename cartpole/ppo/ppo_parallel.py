@@ -2,10 +2,40 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import argparse
 import time
 import torch.nn as nn
 from torch.distributions.normal import Normal
 import gymnasium as gym
+from distutils.util import strtobool
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from typing import Optional
+import wandb
+from torch.utils.tensorboard import SummaryWriter
+
+import functools
+
+from sample_factory.cfg.arguments import parse_full_cfg, parse_sf_args
+from sample_factory.envs.env_utils import register_env
+from sample_factory.train import run_rl
+
+from datetime import date
+today = date.today()
+d = str(today.strftime("%b-%d-%Y"))
+
+def parse_args():
+    parser =  argparse.ArgumentParser()
+    parser.add_argument('--exp-name', type=str, default=d, help="name of this experiment")
+    parser.add_argument('--gym-id', type=str, default="Cartpole-V1", help="id of this environment")
+    parser.add_argument('--learning-rate', type=float, default=2.5e-4, help="set learning rate for algorithm")
+    parser.add_argument('--seed', type=int, default=1, help="seed of this experiment")
+    parser.add_argument('--track', type=lambda x:bool(strtobool(x)), default=False, nargs="?", const="True", help="To enable WandB tracking")
+    parser.add_argument('--wandb-project-name', type=str, default="Prototype", help="the wandb's project name")
+    parser.add_argument('--wandb-entity', type=str, default=None, help="the entity (team) of wandb's project")
+    args = parser.parse_args()
+    return args
+
+
 
 class Policy_Network():
 
@@ -55,15 +85,27 @@ class Value_Network():
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         value = self.value_net(x)
         return value
+    
+def make_env(gym_id, seed, rank, capture_video=None, run_name=None):
+    def _init():
+        env = gym.make(gym_id)
+        env = gym.wrappers.RecordEpisodeStatistics(env)
+        if capture_video:
+                env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+        env.reset(seed=seed+rank)
+        env.action_space.seed(seed)
+        env.observation_space.seed(seed)
+        return env
+    return _init
 
 
 class Simulation:
     
     def __init__(self, render=False):
-        
-        self.env = gym.make("InvertedPendulum-v4")
-        if render:
-            self.env = gym.make("InvertedPendulum-v4", render_mode="human")
+
+        self.env_id = "InvertedPendulum-v4"
+        self.num_cpu = 16
+        self.envs = SubprocVecEnv([make_env(args.gym_id, i) for i in range(args.num_envs)])
         self.obs_space_dims = self.env.observation_space.shape[0]
         self.action_space_dims = self.env.action_space.shape[0]
         self.learning_rate = 1e-4
@@ -79,8 +121,8 @@ class Simulation:
         self.log_prob_buffer = []
         self.reward_buffer = []
         self.return_buffer = []
-        self.episode_time_buffer = []
-        self.episode_steps_buffer = []
+        self.update_time_buffer = []
+        self.update_steps_buffer = []
         self.value_buffer = []
         self.td_buffer = []
         self.gae_buffer = []
@@ -96,6 +138,38 @@ class Simulation:
 
         self.clip_coeff = 0.2
         self.plot = True
+
+        self.writer = None
+
+
+    def tensorboard_init(self):
+        run_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+        self.writer = SummaryWriter(f"runs/{run_name}")
+        self.writer.add_text(
+            "Hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()]))
+        )
+
+    
+    def wandb_init(self):
+        wandb.init(
+            project=args.wandb_project_name, 
+            entity=args.wandb_entity,
+            sync_tensorboard=True,
+            config=vars(args),
+            name=run_name,
+            monitor_gym=True,
+            save_code=True,
+        )
+
+
+
+    def make_mujoco_env(env_name, env_id, _cfg, _env_config, render_mode: Optional[str] = None, **kwargs):
+        env = gym.make(env_id, render_mode=render_mode)
+        return env
+
+    def register_components(self):
+        for env in self.ENVS:
+            register_env(env.name, self.make_mujoco_env)
 
 
     def sample_action(self, obs):
@@ -127,8 +201,8 @@ class Simulation:
         self.flush_post_ep()
         self.log_avg_return.clear()
         self.log_avg_reward.clear()
-        self.episode_steps_buffer.clear()
-        self.episode_time_buffer.clear()
+        self.update_steps_buffer.clear()
+        self.update_time_buffer.clear()
         self.log_avg_value.clear()
 
     def get_return_buffer(self):
@@ -227,6 +301,7 @@ class Simulation:
             gae_buffer[l-i-1] = gae
         self.gae_buffer = gae_buffer
         return self.gae_buffer
+
     
     def load_weights(self, pol=None, val=None):
         if pol:
@@ -244,19 +319,19 @@ class Simulation:
         Y = self.log_avg_reward
         Y = self.moving_average(Y, n=50)
         ax[0, 1].plot(X, Y)
-        Y = self.episode_steps_buffer
+        Y = self.update_steps_buffer
         Y = self.moving_average(Y, n=50)
         ax[0, 2].plot(X, Y)
-        Y = np.cumsum(np.array(self.episode_steps_buffer))
+        Y = np.cumsum(np.array(self.update_steps_buffer))
         ax[1, 0].plot(X, Y)
-        Y = np.cumsum(np.array(self.episode_time_buffer))
+        Y = np.cumsum(np.array(self.update_time_buffer))
         ax[1, 1].plot(X, Y)        
         Y = self.log_avg_value
         ax[1, 2].plot(X, Y)        
         ax[0, 0].set_ylabel('Returns')
         ax[0, 0].set_ylim(bottom=0)
         ax[0, 1].set_ylabel('Rewards')
-        ax[0, 2].set_ylabel("Episode Length")
+        ax[0, 2].set_ylabel("update Length")
         ax[1, 0].set_ylabel("# Steps")
         ax[1, 1].set_ylabel("Time (s)")
         ax[1, 2].set_ylabel("Average Value")
@@ -280,44 +355,52 @@ class Simulation:
     def train(self, num_eps, seed=1):
         
         train_time = time.time()
+        global_step=0
+        # next_obs = torch.Tensor(self.envs.reset())
+        next_done = torch.zeros(args.num_envs)
+        num_upd = args.total_timesteps // args.batch_size
 
-        for episode in range(num_eps):
-            obs, info = self.env.reset(seed=seed)
+        for update in range(1, num_upd+1):
+            if args.anneal_lr:
+                frac = 1.0 - (update - 1.0) / num_eps
+                lrnow = frac * args.learning_rate
+                self.pol_optimizer.param_groups[0]["lr"] = lrnow
+                self.val_optimizer.param_groups[0]["lr"] = lrnow
+
+            obs, info = self.envs.reset(seed=seed)
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
             self.value_buffer.append(self.value.forward(obs_tensor))
             done = False
             step_time = 0
-            episode_start = time.time()
+            update_start = time.time()
             num_steps = 0
-            while not done:
-                self.training_step += 1
-                num_steps+=1
+            for step in range(0, args.num_steps):
+                global_step+=1*args.num_envs
                 action = self.sample_action(obs)
-                obs, reward, terminated, truncated, info = self.env.step(action)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
                 val = self.value.forward(obs_tensor)
-                self.value_buffer.append(val)
-                self.reward_buffer.append(reward)
+                self.value_buffer.append(val.flatten())
+                obs, reward, terminated, truncated, info = self.envs.step(action)
+                self.reward_buffer.append(reward.view(-1))
      
-                step_dur = time.time()-episode_start
-                episode_start = time.time()
+                step_dur = time.time()-update_start
+                update_start = time.time()
                 step_time+=step_dur
-
-                done = terminated or truncated
-            self.episode_steps_buffer.append(num_steps)
-            step_time/=self.training_step
+            
+            self.update_steps_buffer.append(num_steps)
+            step_time/=global_step
             self.eps_run+=1
 
-            episode_time = time.time()
-            episode_dur = episode_time - train_time
+            update_time = time.time()
+            update_dur = update_time - train_time
             train_time = time.time()
-            self.episode_time_buffer.append(episode_dur)
+            self.update_time_buffer.append(update_dur)
 
             ## Update 
             self.get_return_buffer()
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
-            if episode != 0:
+            if update != 0:
                 self.ppo_update()
                 self.value_update()
             self.log_data()
@@ -325,25 +408,26 @@ class Simulation:
             self.old_log_prob = self.log_prob_buffer
             self.flush_post_ep()
 
-            if (episode+1) % 100 == 0:
+            if (update+1) % 100 == 0:
                 avg_reward = self.log_avg_reward[-1]
-                print("Episode:", episode, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1])
+                print("update:", update, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1])
 
-            if (episode+1) % 1000 == 0 and self.plot:
+            if (update+1) % 1000 == 0 and self.plot:
                 self.plot_training()
             
 
-
 sim = Simulation()
 pol = "/Users/stav.42/RL_Library/cartpole/weights/PPO.pth"
-# sim.load_weights(pol=pol)
 print("Simulation instantiated")
+args = parse_args()
+print(args)
 
-for seed in range(8):
-    sim.train(num_eps=3000, seed=seed)
-    sim.plot_training()
-    sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-    sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
-    # sim.flush_post_iter()
-sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+# for seed in range(8):
+#     # add seeds
+#     sim.train(num_eps=3000, seed=seed)
+#     sim.plot_training()
+#     sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+#     sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+#     # sim.flush_post_iter()
+# sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+# sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
