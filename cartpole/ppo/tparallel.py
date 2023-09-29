@@ -210,7 +210,6 @@ class Simulation:
             tmp_list[length-i-1] = val
         return tmp_list
 
-
     def get_return_buffer(self):
         rew = np.array(self.reward_buffer)
         rewards = np.flip(rew, axis=0)
