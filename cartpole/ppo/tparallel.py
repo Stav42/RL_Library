@@ -211,12 +211,10 @@ class Simulation:
         return tmp_list
 
 
-    def get_return_buffer(self, arr):
-        self.return_buffer.clear()
-        rew = np.array(arr)
-        rewards = np.flip(np.array(arr), axis=0)
+    def get_return_buffer(self):
+        rew = np.array(self.reward_buffer)
+        rewards = np.flip(rew, axis=0)
         for env in range(rewards.shape[1]):
-            acc_rew = 0
             gamma = self.gamma
             returns = []
             for i, reward in enumerate(rewards[:, env]):
@@ -435,5 +433,4 @@ if __name__ == "__main__":
     reward = np.array([[1, 2, 3, 4, 5, 6, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16]])
     reward = np.transpose(reward)
     reward = list(reward)
-    returns = sim.get_return_buffer(reward)
 

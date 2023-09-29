@@ -131,22 +131,26 @@ class Simulation:
         self.episode_time_buffer.clear()
         self.log_avg_value.clear()
 
+    def flip_list(self, lt):
+        length = len(lt)
+        tmp_list = [0]*length
+        for i, val in enumerate(lt):
+            tmp_list[length-i-1] = val
+        return tmp_list
+
     def get_return_buffer(self):
-        rewards = np.flip(np.array(self.reward_buffer))
-        acc_rew = 0
+        rew = np.array(self.reward_buffer)
+        rewards = np.flip(rew)
         gamma = self.gamma
         returns = []
         for i, reward in enumerate(rewards):
-            acc_rew += (gamma**i) * reward
-        for i, reward in enumerate(rewards):
             if i == 0:
-                returns.append(acc_rew)
-                prev_reward = reward
+                returns.append(reward)
             else:
-                returns.append((returns[-1]-prev_reward)/gamma)
-                prev_reward = reward
+                returns.append(reward+gamma*returns[i-1])
+        returns = self.flip_list(returns)
         self.return_buffer = list(returns)
-        return returns
+        return self.return_buffer
     
     def policy_update(self):
         loss_pol = 0
