@@ -225,23 +225,33 @@ class Simulation:
             self.return_buffer.append(list(returns))
         return self.return_buffer
     
+    def get_gae_buffer(self, lmbda):
+        gae = 0
+        gamma = self.gamma
+        for env in range(len(self.td_buffer)):
+            gae_env = []
+            l = len(self.td_buffer[env])
+            for i in range(len(self.td_buffer[env])):
+                if i == 0:
+                    gae = self.td_buffer[env][l-i-1]
+                    gae_env.append(gae)
+                else:
+                    gae = self.td_buffer[env][l-i-1] + lmbda*gamma*gae_env[i-1]
+                    gae_env.append(gae)
+            self.gae_buffer.append(gae_env)
+        return self.gae_buffer
+
     def get_td_buffer(self):
-        rewards = np.flip(np.array(self.reward_buffer), axis=1)
+        values = np.array(self.value_buffer)
+        rewards = np.array(self.reward_buffer)
         self.td_buffer = []
-        for env in range(args.num_envs):   
+        for env in range(rewards.shape[1]):   
             env_td = []         
             for i, rew in enumerate(rewards[:, env]):
-                l = len(self.reward_buffer)
-                if i == 0:
-                    # self.td_buffer.append(rew-self.value_buffer[l-i-1])
+                if i == rewards.shape[0]-1:
                     env_td.append(rew)
-                    continue
-                env_td.append(rew)
-                # self.td_buffer.append(rew + self.gamma*self.value_buffer[l-i-2] - self.value_buffer[l-i-1])
-            env_td_buffer = [0]*len(env_td)
-            for i, td in enumerate(env_td):
-                env_td_buffer[l-i-1] = td
-            env_td = env_td_buffer
+                else:
+                    env_td.append(rew+values[i+1, env]-values[i, env])
             self.td_buffer.append(env_td)
         return self.td_buffer
     
@@ -292,24 +302,6 @@ class Simulation:
                 Y_mva.append(sum)
 
         return Y_mva
-    
-    def get_gae_buffer(self, lmbda):
-        gae = 0
-        l = len(self.td_buffer)
-        for i in range(len(self.td_buffer)):
-            if i == 0:
-                gae += self.td_buffer[l-i-1]
-                self.gae_buffer.append(gae)
-                continue
-
-            ## orginally self.gamma*lmbda*gae.detach()
-            gae = self.td_buffer[l-i-1] + self.gamma*lmbda*gae.detach()
-            self.gae_buffer.append(gae)
-        gae_buffer = [0]*l
-        for i, gae in enumerate(self.gae_buffer):
-            gae_buffer[l-i-1] = gae
-        self.gae_buffer = gae_buffer
-        return self.gae_buffer
 
     
     def load_weights(self, pol=None, val=None):
@@ -365,7 +357,6 @@ class Simulation:
         
         train_time = time.time()
         global_step=0
-        # next_obs = torch.Tensor(self.envs.reset())
         next_done = torch.zeros(args.num_envs)
         num_upd = args.total_timesteps // args.batch_size
         obs = self.envs.reset()
@@ -429,7 +420,15 @@ if __name__ == "__main__":
     args = parse_args()
     sim = Simulation(args)
     # sim.train()
-    reward = np.array([[1, 2, 3, 4, 5, 6, 7, 8], [9, 10, 11, 12, 13, 14, 15, 16]])
+    reward = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 4, 5, 1, 2, 5, 3, 4, 8]])
+    values = np.array([[10, 11, 12, 13, 14, 15, 16, 17, 18], [10, 11, 12, 13, 14, 15, 16, 17, 18]])
     reward = np.transpose(reward)
+    values = np.transpose(values)
     reward = list(reward)
+    values = list(values)
+    sim.value_buffer = values
+    sim.reward_buffer= reward
+    td_buffer = sim.get_td_buffer()
+    sim.td_buffer = td_buffer
+    gae_estimate = sim.get_gae_buffer(lmbda=0.99)
 

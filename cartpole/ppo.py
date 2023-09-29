@@ -201,17 +201,18 @@ class Simulation:
         return Y_mva
     
     def get_td_buffer(self):
-        rewards = np.flip(np.array(self.reward_buffer))
-        for i, rew in enumerate(rewards):
-            l = len(self.reward_buffer)
-            if i == 0:
-                self.td_buffer.append(rew-self.value_buffer[l-i-1])
-                continue
-            self.td_buffer.append(rew + self.gamma*self.value_buffer[l-i-2] - self.value_buffer[l-i-1])
-        td_buffer = [0]*len(self.td_buffer)
-        for i, td in enumerate(self.td_buffer):
-            td_buffer[l-i-1] = td
-        self.td_buffer = td_buffer
+        values = np.array(self.value_buffer)
+        rewards = np.array(self.reward_buffer)
+        self.td_buffer = []
+        for env in range(rewards.shape[1]):   
+            env_td = []         
+            for i, rew in enumerate(rewards[:, env]):
+                print("i is: ", i)
+                if i == rewards.shape[0]-1:
+                    env_td.append(rew)
+                else:
+                    env_td.append(rew+values[i+1, env]-values[i, env])
+            self.td_buffer.append(env_td)
         return self.td_buffer
     
     def get_gae_buffer(self, lmbda):
