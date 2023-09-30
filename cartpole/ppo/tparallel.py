@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument('--num_envs', type=int, default=8, help="number of environments to activate")
     parser.add_argument('--total_timesteps', type=int, default=100000, help="number of global steps to execute")
     parser.add_argument('--batch_size', type=int, default=8, help="number of environments to activate")
-    parser.add_argument('--num_steps', type=int, default=2048, help="the number of steps to run in each environment per policy rollout")
+    parser.add_argument('--num_steps', type=int, default=1600, help="the number of steps to run in each environment per policy rollout")
     parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggle learning rate annealing for policy and value networks")
 
@@ -126,20 +126,21 @@ class Simulation:
         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
 
         self.log_prob_buffer = []
-        self.reward_buffer = []
-        self.return_buffer = []
+        self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.reward_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.return_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.update_time_buffer = []
         self.update_steps_buffer = []
-        self.value_buffer = []
-        self.td_buffer = []
-        self.gae_buffer = []
+        self.value_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.td_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.gae_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.epsilon = 0
 
         self.log_avg_reward = []
         self.log_avg_return = []
         self.log_avg_value = []
 
-        self.old_log_prob = []
+        self.old_log_prob = torch.zeros((args.num_steps, args.num_envs))
         self.training_step = 0
         self.eps_run = 0
 
@@ -170,13 +171,13 @@ class Simulation:
         )
 
 
-    def sample_action(self, obs):
+    def sample_action(self, obs, step):
         obs = torch.tensor(np.array(obs), dtype=torch.float32)
         mean, dev = self.policy.forward(obs)
         distrib = Normal(mean, dev)
         action = distrib.sample()
         logp = distrib.log_prob(action).sum(axis=-1)
-        self.log_prob_buffer.append(logp)
+        self.log_prob_buffer[step, :] = logp
         return action
     
     def save_model(self, path):
@@ -211,55 +212,44 @@ class Simulation:
         return tmp_list
 
     def get_return_buffer(self):
-        rew = np.array(self.reward_buffer)
-        rewards = np.flip(rew, axis=0)
-        for env in range(rewards.shape[1]):
+        rewards = torch.flip(self.reward_buffer, [0])
+        for env in range(rewards.size()[1]):
             gamma = self.gamma
-            returns = []
+            gamma = 1
             for i, reward in enumerate(rewards[:, env]):
                 if i == 0:
-                    returns.append(reward)
+                    self.return_buffer[i, env] = reward
                 else:
-                    returns.append(reward + returns[i-1]*gamma)
-            returns = self.flip_list(returns)
-            self.return_buffer.append(list(returns))
+                    self.return_buffer[i, env] = reward + self.return_buffer[i-1, env]*gamma
+        self.return_buffer = torch.flip(self.return_buffer, [0])
         return self.return_buffer
     
     def get_gae_buffer(self, lmbda):
-        gae = 0
         gamma = self.gamma
-        for env in range(len(self.td_buffer)):
-            gae_env = []
-            l = len(self.td_buffer[env])
-            for i in range(len(self.td_buffer[env])):
+        for env in range(self.td_buffer.size()[1]):
+            l = self.td_buffer.size()[0]
+            for i in range(l):
                 if i == 0:
-                    gae = self.td_buffer[env][l-i-1]
-                    gae_env.append(gae)
+                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env]
                 else:
-                    gae = self.td_buffer[env][l-i-1] + lmbda*gamma*gae_env[i-1]
-                    gae_env.append(gae)
-            self.gae_buffer.append(gae_env)
+                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env] + lmbda*gamma*self.gae_buffer[l-i][env]
         return self.gae_buffer
 
     def get_td_buffer(self):
-        values = np.array(self.value_buffer)
-        rewards = np.array(self.reward_buffer)
-        self.td_buffer = []
-        for env in range(rewards.shape[1]):   
-            env_td = []         
-            for i, rew in enumerate(rewards[:, env]):
-                if i == rewards.shape[0]-1:
-                    env_td.append(rew)
+        for env in range(self.reward_buffer.size()[1]):   
+            for i, rew in enumerate(self.reward_buffer[:, env]):
+                if i == self.reward_buffer.size()[0]-1:
+                    self.td_buffer[i, env] = rew
                 else:
-                    env_td.append(rew+values[i+1, env]-values[i, env])
-            self.td_buffer.append(env_td)
+                    self.td_buffer[i, env] = rew + self.value_buffer[i+1, env] - self.value_buffer[i, env]
         return self.td_buffer
     
     def policy_update(self):
         loss_pol = 0
         log_prob = self.log_prob_buffer
-        for i in range(len(self.reward_buffer)):
-            loss_pol+=self.log_prob_buffer[i]*(self.gae_buffer[i].detach())
+        for env in range(args.num_envs):
+            for i in range(self.reward_buffer[:, env].size()[0]):
+                loss_pol+=self.log_prob_buffer[i, env]*(self.gae_buffer[i, env].detach())
         loss_pol*=-1
         self.pol_optimizer.zero_grad()
         loss_pol.backward()
@@ -267,8 +257,9 @@ class Simulation:
 
     def value_update(self):
         loss_val = 0
-        for i in range(len(self.return_buffer)):
-            loss_val += (self.return_buffer[i]-self.value_buffer[i])**2
+        for env in range(args.num_envs):
+            for i in range(self.reward_buffer[:, env].size()[0]):
+                loss_val += (self.return_buffer[i, env]-self.value_buffer[i, env])**2
         self.val_optimizer.zero_grad()
         loss_val.backward()
         self.val_optimizer.step()
@@ -280,8 +271,9 @@ class Simulation:
         self.log_avg_return.append(mean_ret)
         val_buffer = self.value_buffer
         for i, val in enumerate(range(len(val_buffer))):
-            val_buffer[i] = val_buffer[i].detach().numpy()
-        val_buffer = np.array(val_buffer)
+            # Point of contention
+            val_buffer[i] = val_buffer[i].detach()
+        val_buffer = np.array(val_buffer.detach())
         mean_val = val_buffer.mean()
         self.log_avg_value.append(mean_val)
 
@@ -341,12 +333,13 @@ class Simulation:
     def ppo_update(self):
         loss_pol = 0
         size = min(len(self.reward_buffer), len(self.old_log_prob))
+        print("size of prob_log buffer: ", len(self.log_prob_buffer), len(self.log_prob_buffer[0]))
         for i in range(size):
             logratio = self.log_prob_buffer[i] - self.old_log_prob[i].detach()
             ratio = torch.exp(logratio)
             tmp_loss1 = -1*self.gae_buffer[i].detach()*ratio
             tmp_loss2 = -1*self.gae_buffer[i].detach()*torch.clamp(ratio, 1-self.clip_coeff, 1+self.clip_coeff)
-            loss_pol += torch.max(tmp_loss1, tmp_loss2)
+            loss_pol += torch.max(tmp_loss1, tmp_loss2).mean()
 
         loss_pol/=len(self.reward_buffer)
         self.pol_optimizer.zero_grad()
@@ -363,72 +356,94 @@ class Simulation:
         print(obs.shape)
 
         for update in range(1, num_upd+1):
-            if args.anneal_lr:
-                frac = 1.0 - (update - 1.0) / num_upd
-                lrnow = frac * args.learning_rate
-                self.pol_optimizer.param_groups[0]["lr"] = lrnow
-                self.val_optimizer.param_groups[0]["lr"] = lrnow
+            print("Update: ", update)
+            # if args.anneal_lr:
+            #     frac = 1.0 - (update - 1.0) / num_upd
+            #     lrnow = frac * args.learning_rate
+            #     self.pol_optimizer.param_groups[0]["lr"] = lrnow
+            #     self.val_optimizer.param_groups[0]["lr"] = lrnow
 
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
-            self.value_buffer.append(self.value.forward(obs_tensor))
-            done = False
+            # self.value_buffer.append(self.value.forward(obs_tensor))
+            # done = False
             step_time = 0
             update_start = time.time()
             num_steps = 0
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
-                action = self.sample_action(obs)
+                action = self.sample_action(obs, step=step)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
                 val = self.value.forward(obs_tensor)
-                self.value_buffer.append(val.flatten())
+                self.value_buffer[step, :] = torch.transpose(val, 0, 1)
+                # self.value_buffer.append(val)
                 obs, reward, done, info = self.envs.step(action)
-                self.reward_buffer.append(reward)
-     
+                # self.reward_buffer.append(reward)
+                self.reward_buffer[step, :] = torch.tensor(reward)
                 step_dur = time.time()-update_start
                 update_start = time.time()
                 step_time+=step_dur
             
-            self.update_steps_buffer.append(num_steps)
+            self.update_steps_buffer.append(global_step)
+            self.update_time_buffer.append(step_time)
             step_time/=global_step
             self.eps_run+=1
-
             update_time = time.time()
             update_dur = update_time - train_time
             train_time = time.time()
-            self.update_time_buffer.append(update_dur)
 
             ## Update 
             self.get_return_buffer()
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
-            # if update != 0:
-            #     self.ppo_update()
-            #     self.value_update()
+            
+            if update != 1:
+                self.policy_update()
+                self.value_update()
             self.log_data()
             # Cacheing previous policy's log buffer
             self.old_log_prob = self.log_prob_buffer
-            self.flush_post_ep()
+            # self.flush_post_ep()
 
-            if (update+1) % 100 == 0:
+            if (update) % 10 == 0:
                 avg_reward = self.log_avg_reward[-1]
                 print("update:", update, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1])
 
-            if (update+1) % 1000 == 0 and self.plot:
+            if (update) % 10 == 0 and self.plot:
                 self.plot_training()
             
 if __name__ == "__main__":
     args = parse_args()
     sim = Simulation(args)
     # sim.train()
-    reward = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 4, 5, 1, 2, 5, 3, 4, 8]])
-    values = np.array([[10, 11, 12, 13, 14, 15, 16, 17, 18], [10, 11, 12, 13, 14, 15, 16, 17, 18]])
-    reward = np.transpose(reward)
-    values = np.transpose(values)
-    reward = list(reward)
-    values = list(values)
-    sim.value_buffer = values
-    sim.reward_buffer= reward
-    td_buffer = sim.get_td_buffer()
-    sim.td_buffer = td_buffer
-    gae_estimate = sim.get_gae_buffer(lmbda=0.99)
+    # reward = torch.tensor([[1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 4, 5, 1, 2, 5, 3, 4, 8]])
+    # reward = torch.ones((1600, 2))
+    # values = torch.tensor([[10, 11, 12, 13, 14, 15, 16, 17, 18], [10, 11, 12, 13, 14, 15, 16, 17, 18]])
+    # values = torch.ones((1600, 2))
+    # values = torch.cumsum(values, dim=0)
+    # values *= 2
+    # reward = torch.transpose(reward, 0, 1)
+    # values = torch.transpose(values, 0, 1)
+    # reward = list(reward)
+    # values = list(values)
+    # print(reward)
+    # sim.value_buffer=values
+    # sim.reward_buffer=reward
+    # sim.gamma=1
+    # returns = sim.get_return_buffer()
+    # sim.return_buffer = returns
+    # sim.td_buffer = sim.get_td_buffer()
+    # print("td buffer: ")
+    # print(sim.td_buffer)
+    # sim.gae_buffer = sim.get_gae_buffer(lmbda=)
+    # print(sim.gae_buffer)
+
+    # sim.gae_buffer = sim.get_gae_buffer(lmbda=1)
+    # print(sim.gae_buffer)
+
+    # print(returns[-20:, 0])
+    # td_buffer = sim.get_td_buffer()
+    # sim.td_buffer = td_buffer
+    # gae_estimate = sim.get_gae_buffer(lmbda=0.99)
+    sim.train()
+
 
