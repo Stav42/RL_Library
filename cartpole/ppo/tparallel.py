@@ -189,12 +189,12 @@ class Simulation:
         torch.save(self.value.value_net.state_dict(), path)
     
     def flush_post_ep(self):
-        self.log_prob_buffer.clear()
-        self.reward_buffer.clear()
-        self.return_buffer.clear()
-        self.value_buffer.clear()
-        self.td_buffer.clear()
-        self.gae_buffer.clear()
+        self.log_prob_buffer.detach_()
+        self.reward_buffer.detach_()
+        self.return_buffer.detach_()
+        self.value_buffer.detach_()
+        self.td_buffer.detach_()
+        self.gae_buffer.detach_()
 
     def flush_post_iter(self):
         self.flush_post_ep()
@@ -245,15 +245,19 @@ class Simulation:
         return self.td_buffer
     
     def policy_update(self):
-        loss_pol = 0
-        log_prob = self.log_prob_buffer
-        for env in range(args.num_envs):
-            for i in range(self.reward_buffer[:, env].size()[0]):
-                loss_pol+=self.log_prob_buffer[i, env]*(self.gae_buffer[i, env].detach())
-        loss_pol*=-1
-        self.pol_optimizer.zero_grad()
-        loss_pol.backward()
-        self.pol_optimizer.step()
+        n_mini_batch = args.num_minibatches
+        total_samples = args.num_steps * args.num_envs
+        mini_batch_size = total_samples // n_mini_batch
+        indices = np.random.permutation(total_samples)
+        for i in range(n_mini_batch):
+            mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
+            mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
+            mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
+            loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
+            self.pol_optimizer.zero_grad()
+            loss_pol.backward()
+            self.pol_optimizer.step()
+            loss_pol.detach()
 
     def value_update(self):
         loss_val = 0
@@ -333,7 +337,6 @@ class Simulation:
     def ppo_update(self):
         loss_pol = 0
         size = min(len(self.reward_buffer), len(self.old_log_prob))
-        print("size of prob_log buffer: ", len(self.log_prob_buffer), len(self.log_prob_buffer[0]))
         for i in range(size):
             logratio = self.log_prob_buffer[i] - self.old_log_prob[i].detach()
             ratio = torch.exp(logratio)
@@ -345,6 +348,17 @@ class Simulation:
         self.pol_optimizer.zero_grad()
         loss_pol.backward()
         self.pol_optimizer.step()
+
+    def check_values_same(self, new, old):
+        delta = torch.abs(new - old)
+        scalar = 0.03
+        num_torch = torch.lt(delta, 0.0003)
+        print(f"No. of elements less than {scalar}", torch.sum(num_torch).item())
+
+    def print_args_summary(self):
+        print("Arguments passed to the script:")
+        for arg, value in vars(args).items():
+            print(f"{arg}: {value}")
 
     def train(self, seed=1):
         
@@ -396,13 +410,15 @@ class Simulation:
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
             
-            if update != 1:
-                self.policy_update()
-                self.value_update()
+            # if update != 1:
+            #     self.policy_update()
+            #     self.value_update()
+            self.policy_update()
+            self.value_update()
             self.log_data()
             # Cacheing previous policy's log buffer
-            self.old_log_prob = self.log_prob_buffer
-            # self.flush_post_ep()
+            self.old_log_prob = self.log_prob_buffer.clone()
+            self.flush_post_ep()
 
             if (update) % 10 == 0:
                 avg_reward = self.log_avg_reward[-1]
@@ -444,6 +460,8 @@ if __name__ == "__main__":
     # td_buffer = sim.get_td_buffer()
     # sim.td_buffer = td_buffer
     # gae_estimate = sim.get_gae_buffer(lmbda=0.99)
+    sim.print_args_summary()
     sim.train()
+    sim.save_model(path="./weights")
 
 
