@@ -1,5 +1,6 @@
 import random
 import matplotlib.pyplot as plt
+import psutil
 import numpy as np
 import torch
 import argparse
@@ -18,6 +19,9 @@ import functools
 from datetime import date
 today = date.today()
 d = str(today.strftime("%b-%d-%Y"))
+
+torch.autograd.set_detect_anomaly(True)
+
 
 def parse_args():
     parser =  argparse.ArgumentParser()
@@ -189,12 +193,12 @@ class Simulation:
         torch.save(self.value.value_net.state_dict(), path)
     
     def flush_post_ep(self):
-        self.log_prob_buffer.detach_()
-        self.reward_buffer.detach_()
-        self.return_buffer.detach_()
-        self.value_buffer.detach_()
-        self.td_buffer.detach_()
-        self.gae_buffer.detach_()
+        self.log_prob_buffer = self.log_prob_buffer.detach()
+        self.reward_buffer = self.reward_buffer.detach()
+        self.return_buffer = self.return_buffer.detach()
+        self.value_buffer = self.value_buffer.detach()
+        self.td_buffer = self.td_buffer.detach()
+        self.gae_buffer = self.gae_buffer.detach()
 
     def flush_post_iter(self):
         self.flush_post_ep()
@@ -232,7 +236,10 @@ class Simulation:
                 if i == 0:
                     self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env]
                 else:
-                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env] + lmbda*gamma*self.gae_buffer[l-i][env]
+                    # print(self.gae_buffer[l-i-1][env])
+                    # print(self.td_buffer[l-i-1][env])
+                    # print(lmbda*gamma*self.gae_buffer[l-i][env])
+                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env] + lmbda*gamma*self.gae_buffer[l-i][env].detach()
         return self.gae_buffer
 
     def get_td_buffer(self):
@@ -249,15 +256,26 @@ class Simulation:
         total_samples = args.num_steps * args.num_envs
         mini_batch_size = total_samples // n_mini_batch
         indices = np.random.permutation(total_samples)
+        self.count_active_processes()
         for i in range(n_mini_batch):
             mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
-            mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
-            mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
-            loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
             self.pol_optimizer.zero_grad()
-            loss_pol.backward()
+            mini_batch_log_probs = self.log_prob_buffer.clone().reshape(-1)[mini_batch_indices]
+            mini_batch_gae = self.gae_buffer.clone().reshape(-1)[mini_batch_indices]
+            print("mini_gae", mini_batch_gae[0])
+            print("mini_log_prob", mini_batch_log_probs[0])
+            print("Size Mini_batch_log_probs, mini_batch_gae: ", mini_batch_log_probs.size(), " and ", mini_batch_gae.size())
+            loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
+            print("loss_pol: ", loss_pol)
+            # self.count_active_processes()
+           
+            loss_pol.backward(retain_graph=False)
+            print("global gradiants calculated")
             self.pol_optimizer.step()
-            loss_pol.detach()
+            # loss_pol.detach()
+            # loss_pol.detach()
+            old_indices = mini_batch_indices
+            print("i: ", i)
 
     def value_update(self):
         loss_val = 0
@@ -360,6 +378,10 @@ class Simulation:
         for arg, value in vars(args).items():
             print(f"{arg}: {value}")
 
+    def count_active_processes(selfs):
+        process_count = len(psutil.pids())
+        print(f'Number of active processes: {process_count}')
+
     def train(self, seed=1):
         
         train_time = time.time()
@@ -368,6 +390,7 @@ class Simulation:
         num_upd = args.total_timesteps // args.batch_size
         obs = self.envs.reset()
         print(obs.shape)
+        
 
         for update in range(1, num_upd+1):
             print("Update: ", update)
@@ -383,6 +406,8 @@ class Simulation:
             step_time = 0
             update_start = time.time()
             num_steps = 0
+            # print("Before the loop: ")
+            # self.count_active_processes()
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
                 action = self.sample_action(obs, step=step)
@@ -396,7 +421,11 @@ class Simulation:
                 step_dur = time.time()-update_start
                 update_start = time.time()
                 step_time+=step_dur
+                # print("Inside the loop: ")
+                # self.count_active_processes()
             
+            # print("After the loop: ")
+            # self.count_active_processes()
             self.update_steps_buffer.append(global_step)
             self.update_time_buffer.append(step_time)
             step_time/=global_step
@@ -413,12 +442,14 @@ class Simulation:
             # if update != 1:
             #     self.policy_update()
             #     self.value_update()
+            print("Before policy update: ")
+            self.count_active_processes()
             self.policy_update()
-            self.value_update()
+            # self.value_update()
             self.log_data()
             # Cacheing previous policy's log buffer
             self.old_log_prob = self.log_prob_buffer.clone()
-            self.flush_post_ep()
+            # self.flush_post_ep()
 
             if (update) % 10 == 0:
                 avg_reward = self.log_avg_reward[-1]
