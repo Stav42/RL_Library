@@ -2,6 +2,7 @@ import random
 import matplotlib.pyplot as plt
 import psutil
 import numpy as np
+import os
 import torch
 import argparse
 import time
@@ -239,7 +240,8 @@ class Simulation:
                     # print(self.gae_buffer[l-i-1][env])
                     # print(self.td_buffer[l-i-1][env])
                     # print(lmbda*gamma*self.gae_buffer[l-i][env])
-                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env] + lmbda*gamma*self.gae_buffer[l-i][env].detach()
+                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env].clone() + lmbda*gamma*self.gae_buffer[l-i][env].clone().detach()
+        print("Complete gae buffering")
         return self.gae_buffer
 
     def get_td_buffer(self):
@@ -259,32 +261,49 @@ class Simulation:
         self.count_active_processes()
         for i in range(n_mini_batch):
             mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
-            self.pol_optimizer.zero_grad()
-            mini_batch_log_probs = self.log_prob_buffer.clone().reshape(-1)[mini_batch_indices]
-            mini_batch_gae = self.gae_buffer.clone().reshape(-1)[mini_batch_indices]
-            print("mini_gae", mini_batch_gae[0])
-            print("mini_log_prob", mini_batch_log_probs[0])
-            print("Size Mini_batch_log_probs, mini_batch_gae: ", mini_batch_log_probs.size(), " and ", mini_batch_gae.size())
+            mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
+            mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
+            mini_batch_log_probs = mini_batch_log_probs.detach()
+            mini_batch_log_probs.requires_grad = True
+            mini_batch_gae = mini_batch_gae.detach()
+            mini_batch_gae.requires_grad = True
             loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
-            print("loss_pol: ", loss_pol)
-            # self.count_active_processes()
-           
-            loss_pol.backward(retain_graph=False)
-            print("global gradiants calculated")
+            loss_pol.backward()
             self.pol_optimizer.step()
+            self.pol_optimizer.zero_grad()
+
             # loss_pol.detach()
             # loss_pol.detach()
             old_indices = mini_batch_indices
             print("i: ", i)
 
-    def value_update(self):
+    def value_update_base(self):
         loss_val = 0
         for env in range(args.num_envs):
+            print("env", env)
             for i in range(self.reward_buffer[:, env].size()[0]):
                 loss_val += (self.return_buffer[i, env]-self.value_buffer[i, env])**2
         self.val_optimizer.zero_grad()
         loss_val.backward()
         self.val_optimizer.step()
+
+    def value_update(self):
+        n_mini_batch = args.num_minibatches
+        total_samples = args.num_steps * args.num_envs
+        mini_batch_size = total_samples // n_mini_batch
+        indices = np.random.permutation(total_samples)
+        for i in range(n_mini_batch):
+            mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
+            mini_return = self.return_buffer.reshape(-1)[mini_batch_indices].detach()
+            mini_value = self.value_buffer.reshape(-1)[mini_batch_indices].detach()
+            mini_return.requires_grad = True
+            mini_value.requires_grad = True
+
+            loss_val =  (mini_return - mini_value)**2
+            loss = torch.sum(loss_val)
+            loss.backward()
+            self.val_optimizer.step()
+            self.val_optimizer.zero_grad()
 
     def log_data(self):
         mean_rew = np.array(self.reward_buffer).mean()
@@ -445,7 +464,7 @@ class Simulation:
             print("Before policy update: ")
             self.count_active_processes()
             self.policy_update()
-            # self.value_update()
+            self.value_update()
             self.log_data()
             # Cacheing previous policy's log buffer
             self.old_log_prob = self.log_prob_buffer.clone()
