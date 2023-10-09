@@ -237,9 +237,6 @@ class Simulation:
                 if i == 0:
                     self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env]
                 else:
-                    # print(self.gae_buffer[l-i-1][env])
-                    # print(self.td_buffer[l-i-1][env])
-                    # print(lmbda*gamma*self.gae_buffer[l-i][env])
                     self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env].clone() + lmbda*gamma*self.gae_buffer[l-i][env].clone().detach()
         print("Complete gae buffering")
         return self.gae_buffer
@@ -262,24 +259,15 @@ class Simulation:
             mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
             mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
             mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
-            # mini_batch_log_probs = mini_batch_log_probs.detach()
-            # mini_batch_log_probs.requires_grad = True
-            # mini_batch_gae = mini_batch_gae.detach()
-            # mini_batch_gae.requires_grad = True
             loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
             loss_pol.backward(retain_graph=True)
-            # self.pol_optimizer.step()
-            for name, param in self.policy.policy_net.named_parameters():
-                print("param grad: ", param.grad)
             old_indices = mini_batch_indices
         self.pol_optimizer.step()
         self.pol_optimizer.zero_grad()
-        print("Updated")
 
     def value_update_base(self):
         loss_val = 0
         for env in range(args.num_envs):
-            print("env", env)
             for i in range(self.reward_buffer[:, env].size()[0]):
                 loss_val += (self.return_buffer[i, env]-self.value_buffer[i, env])**2
         self.val_optimizer.zero_grad()
@@ -297,7 +285,6 @@ class Simulation:
             mini_value = self.value_buffer.reshape(-1)[mini_batch_indices].detach()
             mini_return.requires_grad = True
             mini_value.requires_grad = True
-
             loss_val =  (mini_return - mini_value)**2
             loss = torch.sum(loss_val)
             loss.backward()
@@ -311,7 +298,6 @@ class Simulation:
         self.log_avg_return.append(mean_ret)
         val_buffer = self.value_buffer
         for i, val in enumerate(range(len(val_buffer))):
-            # Point of contention
             val_buffer[i] = val_buffer[i].detach()
         val_buffer = np.array(val_buffer.detach())
         mean_val = val_buffer.mean()
@@ -385,20 +371,10 @@ class Simulation:
         loss_pol.backward()
         self.pol_optimizer.step()
 
-    def check_values_same(self, new, old):
-        delta = torch.abs(new - old)
-        scalar = 0.03
-        num_torch = torch.lt(delta, 0.0003)
-        print(f"No. of elements less than {scalar}", torch.sum(num_torch).item())
-
     def print_args_summary(self):
         print("Arguments passed to the script:")
         for arg, value in vars(args).items():
             print(f"{arg}: {value}")
-
-    def count_active_processes(selfs):
-        process_count = len(psutil.pids())
-        print(f'Number of active processes: {process_count}')
 
     def train(self, seed=1):
         
@@ -409,41 +385,24 @@ class Simulation:
         obs = self.envs.reset()
         print(obs.shape)
         
-
         for update in range(1, num_upd+1):
             print("Update: ", update)
-            # if args.anneal_lr:
-            #     frac = 1.0 - (update - 1.0) / num_upd
-            #     lrnow = frac * args.learning_rate
-            #     self.pol_optimizer.param_groups[0]["lr"] = lrnow
-            #     self.val_optimizer.param_groups[0]["lr"] = lrnow
-
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
-            # self.value_buffer.append(self.value.forward(obs_tensor))
-            # done = False
             step_time = 0
             update_start = time.time()
             num_steps = 0
-            # print("Before the loop: ")
-            # self.count_active_processes()
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
                 action = self.sample_action(obs, step=step)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
                 val = self.value.forward(obs_tensor)
                 self.value_buffer[step, :] = torch.transpose(val, 0, 1)
-                # self.value_buffer.append(val)
                 obs, reward, done, info = self.envs.step(action)
-                # self.reward_buffer.append(reward)
                 self.reward_buffer[step, :] = torch.tensor(reward)
                 step_dur = time.time()-update_start
                 update_start = time.time()
                 step_time+=step_dur
-                # print("Inside the loop: ")
-                # self.count_active_processes()
-            
-            # print("After the loop: ")
-            # self.count_active_processes()
+
             self.update_steps_buffer.append(global_step)
             self.update_time_buffer.append(step_time)
             step_time/=global_step
@@ -456,18 +415,12 @@ class Simulation:
             self.get_return_buffer()
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
-            # if update != 1:
-            #     self.policy_update()
-            #     self.value_update()
-            print("Before policy update: ")
             self.count_active_processes()
             self.policy_update()
             self.value_update()
             self.log_data()
             self.flush_post_ep()
-            # Cacheing previous policy's log buffer
             self.old_log_prob = self.log_prob_buffer.clone()
-            # self.flush_post_ep()
 
             if (update) % 10 == 0:
                 avg_reward = self.log_avg_reward[-1]
@@ -479,36 +432,6 @@ class Simulation:
 if __name__ == "__main__":
     args = parse_args()
     sim = Simulation(args)
-    # sim.train()
-    # reward = torch.tensor([[1, 2, 3, 4, 5, 6, 7, 8, 9], [3, 4, 5, 1, 2, 5, 3, 4, 8]])
-    # reward = torch.ones((1600, 2))
-    # values = torch.tensor([[10, 11, 12, 13, 14, 15, 16, 17, 18], [10, 11, 12, 13, 14, 15, 16, 17, 18]])
-    # values = torch.ones((1600, 2))
-    # values = torch.cumsum(values, dim=0)
-    # values *= 2
-    # reward = torch.transpose(reward, 0, 1)
-    # values = torch.transpose(values, 0, 1)
-    # reward = list(reward)
-    # values = list(values)
-    # print(reward)
-    # sim.value_buffer=values
-    # sim.reward_buffer=reward
-    # sim.gamma=1
-    # returns = sim.get_return_buffer()
-    # sim.return_buffer = returns
-    # sim.td_buffer = sim.get_td_buffer()
-    # print("td buffer: ")
-    # print(sim.td_buffer)
-    # sim.gae_buffer = sim.get_gae_buffer(lmbda=)
-    # print(sim.gae_buffer)
-
-    # sim.gae_buffer = sim.get_gae_buffer(lmbda=1)
-    # print(sim.gae_buffer)
-
-    # print(returns[-20:, 0])
-    # td_buffer = sim.get_td_buffer()
-    # sim.td_buffer = td_buffer
-    # gae_estimate = sim.get_gae_buffer(lmbda=0.99)
     sim.print_args_summary()
     sim.train()
     sim.save_model(path="./weights")
