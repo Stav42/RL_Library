@@ -71,7 +71,7 @@ class Policy_Network():
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         action_mean = self.policy_net(x)
-        std = torch.exp(self.log_std)
+        std = torch.exp(self.log_std)   
 
         return action_mean, std
 
@@ -258,24 +258,23 @@ class Simulation:
         total_samples = args.num_steps * args.num_envs
         mini_batch_size = total_samples // n_mini_batch
         indices = np.random.permutation(total_samples)
-        self.count_active_processes()
         for i in range(n_mini_batch):
             mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
             mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
             mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
-            mini_batch_log_probs = mini_batch_log_probs.detach()
-            mini_batch_log_probs.requires_grad = True
-            mini_batch_gae = mini_batch_gae.detach()
-            mini_batch_gae.requires_grad = True
+            # mini_batch_log_probs = mini_batch_log_probs.detach()
+            # mini_batch_log_probs.requires_grad = True
+            # mini_batch_gae = mini_batch_gae.detach()
+            # mini_batch_gae.requires_grad = True
             loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
-            loss_pol.backward()
-            self.pol_optimizer.step()
-            self.pol_optimizer.zero_grad()
-
-            # loss_pol.detach()
-            # loss_pol.detach()
+            loss_pol.backward(retain_graph=True)
+            # self.pol_optimizer.step()
+            for name, param in self.policy.policy_net.named_parameters():
+                print("param grad: ", param.grad)
             old_indices = mini_batch_indices
-            print("i: ", i)
+        self.pol_optimizer.step()
+        self.pol_optimizer.zero_grad()
+        print("Updated")
 
     def value_update_base(self):
         loss_val = 0
@@ -302,8 +301,8 @@ class Simulation:
             loss_val =  (mini_return - mini_value)**2
             loss = torch.sum(loss_val)
             loss.backward()
-            self.val_optimizer.step()
-            self.val_optimizer.zero_grad()
+        self.val_optimizer.step()
+        self.val_optimizer.zero_grad()
 
     def log_data(self):
         mean_rew = np.array(self.reward_buffer).mean()
@@ -457,7 +456,6 @@ class Simulation:
             self.get_return_buffer()
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
-            
             # if update != 1:
             #     self.policy_update()
             #     self.value_update()
@@ -466,6 +464,7 @@ class Simulation:
             self.policy_update()
             self.value_update()
             self.log_data()
+            self.flush_post_ep()
             # Cacheing previous policy's log buffer
             self.old_log_prob = self.log_prob_buffer.clone()
             # self.flush_post_ep()
