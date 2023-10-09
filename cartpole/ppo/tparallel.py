@@ -14,6 +14,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from typing import Optional
 import wandb
 from torch.utils.tensorboard import SummaryWriter
+from debugging import check_values_same
 
 import functools
 
@@ -265,15 +266,6 @@ class Simulation:
         self.pol_optimizer.step()
         self.pol_optimizer.zero_grad()
 
-    def value_update_base(self):
-        loss_val = 0
-        for env in range(args.num_envs):
-            for i in range(self.reward_buffer[:, env].size()[0]):
-                loss_val += (self.return_buffer[i, env]-self.value_buffer[i, env])**2
-        self.val_optimizer.zero_grad()
-        loss_val.backward()
-        self.val_optimizer.step()
-
     def value_update(self):
         n_mini_batch = args.num_minibatches
         total_samples = args.num_steps * args.num_envs
@@ -281,13 +273,11 @@ class Simulation:
         indices = np.random.permutation(total_samples)
         for i in range(n_mini_batch):
             mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
-            mini_return = self.return_buffer.reshape(-1)[mini_batch_indices].detach()
-            mini_value = self.value_buffer.reshape(-1)[mini_batch_indices].detach()
-            mini_return.requires_grad = True
-            mini_value.requires_grad = True
+            mini_return = self.return_buffer.reshape(-1)[mini_batch_indices]
+            mini_value = self.value_buffer.reshape(-1)[mini_batch_indices]
             loss_val =  (mini_return - mini_value)**2
             loss = torch.sum(loss_val)
-            loss.backward()
+            loss.backward(retain_graph=True)
         self.val_optimizer.step()
         self.val_optimizer.zero_grad()
 
