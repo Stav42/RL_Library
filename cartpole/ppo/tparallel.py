@@ -415,7 +415,6 @@ class Simulation:
             self.get_return_buffer()
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
-            self.count_active_processes()
             self.policy_update()
             self.value_update()
             self.log_data()
