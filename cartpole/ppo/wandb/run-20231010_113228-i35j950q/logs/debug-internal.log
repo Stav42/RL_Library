@@ -1,0 +1,193 @@
+2023-10-10 11:32:28,374 INFO    StreamThr :26601 [internal.py:wandb_internal():86] W&B internal server running at pid: 26601, started at: 2023-10-10 11:32:28.373942
+2023-10-10 11:32:28,376 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: status
+2023-10-10 11:32:28,383 INFO    WriterThread:26601 [datastore.py:open_for_write():85] open: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/run-i35j950q.wandb
+2023-10-10 11:32:28,384 DEBUG   SenderThread:26601 [sender.py:send():380] send: header
+2023-10-10 11:32:28,426 DEBUG   SenderThread:26601 [sender.py:send():380] send: run
+2023-10-10 11:32:29,343 INFO    SenderThread:26601 [dir_watcher.py:__init__():211] watching files in: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files
+2023-10-10 11:32:29,344 INFO    SenderThread:26601 [sender.py:_start_run_threads():1122] run started: i35j950q with start time 1696917748.374647
+2023-10-10 11:32:29,357 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: check_version
+2023-10-10 11:32:29,358 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: check_version
+2023-10-10 11:32:29,693 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: run_start
+2023-10-10 11:32:29,700 DEBUG   HandlerThread:26601 [system_info.py:__init__():32] System info init
+2023-10-10 11:32:29,700 DEBUG   HandlerThread:26601 [system_info.py:__init__():47] System info init done
+2023-10-10 11:32:29,700 INFO    HandlerThread:26601 [system_monitor.py:start():181] Starting system monitor
+2023-10-10 11:32:29,700 INFO    SystemMonitor:26601 [system_monitor.py:_start():145] Starting system asset monitoring threads
+2023-10-10 11:32:29,701 INFO    HandlerThread:26601 [system_monitor.py:probe():201] Collecting system info
+2023-10-10 11:32:29,701 INFO    SystemMonitor:26601 [interfaces.py:start():190] Started cpu monitoring
+2023-10-10 11:32:29,701 DEBUG   HandlerThread:26601 [system_info.py:probe():196] Probing system
+2023-10-10 11:32:29,702 INFO    SystemMonitor:26601 [interfaces.py:start():190] Started disk monitoring
+2023-10-10 11:32:29,702 INFO    SystemMonitor:26601 [interfaces.py:start():190] Started gpuapple monitoring
+2023-10-10 11:32:29,704 INFO    SystemMonitor:26601 [interfaces.py:start():190] Started memory monitoring
+2023-10-10 11:32:29,705 INFO    SystemMonitor:26601 [interfaces.py:start():190] Started network monitoring
+2023-10-10 11:32:29,709 DEBUG   HandlerThread:26601 [system_info.py:_probe_git():181] Probing git
+2023-10-10 11:32:29,730 DEBUG   HandlerThread:26601 [system_info.py:_probe_git():189] Probing git done
+2023-10-10 11:32:29,730 DEBUG   HandlerThread:26601 [system_info.py:probe():244] Probing system done
+2023-10-10 11:32:29,730 DEBUG   HandlerThread:26601 [system_monitor.py:probe():210] {'os': 'macOS-13.4.1-arm64-arm-64bit', 'python': '3.9.16', 'heartbeatAt': '2023-10-10T06:02:29.702520', 'startedAt': '2023-10-10T06:02:28.364521', 'docker': None, 'cuda': None, 'args': ('--track', '1', '--description', 'logging_test'), 'state': 'running', 'program': '/Users/stav.42/RL_Library/cartpole/ppo/tparallel.py', 'codePathLocal': 'tparallel.py', 'codePath': 'cartpole/ppo/tparallel.py', 'git': {'remote': 'https://github.com/Stav42/RL_Library.git', 'commit': 'f33a052313963931f49c2ad3221324b3dc2efc94'}, 'email': 'vaditya@iitk.ac.in', 'root': '/Users/stav.42/RL_Library', 'host': 'Adityas-MacBook-Pro.local', 'username': 'stav.42', 'executable': '/Users/stav.42/miniconda3/envs/pytorch_RL/bin/python3', 'cpu_count': 8, 'cpu_count_logical': 8, 'disk': {'/': {'total': 228.27386474609375, 'used': 125.12055969238281}}, 'gpuapple': {'type': 'arm', 'vendor': 'Apple'}, 'memory': {'total': 8.0}}
+2023-10-10 11:32:29,730 INFO    HandlerThread:26601 [system_monitor.py:probe():211] Finished collecting system info
+2023-10-10 11:32:29,730 INFO    HandlerThread:26601 [system_monitor.py:probe():214] Publishing system info
+2023-10-10 11:32:29,730 DEBUG   HandlerThread:26601 [system_info.py:_save_pip():52] Saving list of pip packages installed into the current environment
+2023-10-10 11:32:29,730 DEBUG   HandlerThread:26601 [system_info.py:_save_pip():68] Saving pip packages done
+2023-10-10 11:32:29,730 DEBUG   HandlerThread:26601 [system_info.py:_save_conda():75] Saving list of conda packages installed into the current environment
+2023-10-10 11:32:30,346 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/requirements.txt
+2023-10-10 11:32:30,346 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/conda-environment.yaml
+2023-10-10 11:32:31,690 DEBUG   HandlerThread:26601 [system_info.py:_save_conda():87] Saving conda packages done
+2023-10-10 11:32:31,690 DEBUG   HandlerThread:26601 [system_info.py:_save_code():90] Saving code
+2023-10-10 11:32:31,702 DEBUG   HandlerThread:26601 [system_info.py:_save_code():111] Saving code done
+2023-10-10 11:32:31,702 DEBUG   HandlerThread:26601 [system_info.py:_save_patches():128] Saving git patches
+2023-10-10 11:32:31,777 DEBUG   HandlerThread:26601 [system_info.py:_save_patches():170] Saving git patches done
+2023-10-10 11:32:31,777 INFO    HandlerThread:26601 [system_monitor.py:probe():216] Finished publishing system info
+2023-10-10 11:32:31,780 DEBUG   SenderThread:26601 [sender.py:send():380] send: files
+2023-10-10 11:32:31,781 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file wandb-metadata.json with policy now
+2023-10-10 11:32:31,781 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file code/cartpole/ppo/tparallel.py with policy now
+2023-10-10 11:32:31,781 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file diff.patch with policy now
+2023-10-10 11:32:31,787 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: stop_status
+2023-10-10 11:32:31,787 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: stop_status
+2023-10-10 11:32:31,787 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: internal_messages
+2023-10-10 11:32:31,788 INFO    HandlerThread:26601 [handler.py:handle_tbrecord():742] handling tbrecord: tbrecord {
+  log_dir: "runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917751"
+  save: true
+}
+control {
+  relay_id: "e45e9e40452c4667b9493b87ddcbaf8f"
+}
+_info {
+  stream_id: "i35j950q"
+}
+
+2023-10-10 11:32:31,789 DEBUG   HandlerThread:26601 [config_util.py:dict_from_config_file():104] no default config file found in config-defaults.yaml
+2023-10-10 11:32:32,266 DEBUG   SenderThread:26601 [sender.py:send():380] send: telemetry
+2023-10-10 11:32:32,268 DEBUG   SenderThread:26601 [sender.py:send():380] send: tbrecord
+2023-10-10 11:32:32,269 DEBUG   SenderThread:26601 [sender.py:send():380] send: files
+2023-10-10 11:32:32,269 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file events.out.tfevents.1696917751.Adityas-MacBook-Pro.local.26549.0 with policy live
+2023-10-10 11:32:32,356 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/conda-environment.yaml
+2023-10-10 11:32:32,358 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/wandb-metadata.json
+2023-10-10 11:32:32,358 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/diff.patch
+2023-10-10 11:32:32,358 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/code/cartpole/ppo/tparallel.py
+2023-10-10 11:32:32,358 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/output.log
+2023-10-10 11:32:32,359 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/events.out.tfevents.1696917751.Adityas-MacBook-Pro.local.26549.0
+2023-10-10 11:32:32,359 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/code
+2023-10-10 11:32:32,359 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/code/cartpole/ppo
+2023-10-10 11:32:32,359 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/code/cartpole
+2023-10-10 11:32:33,125 INFO    wandb-upload_1:26601 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpgd6j7hwzwandb/2mv8c9jt-code/cartpole/ppo/tparallel.py
+2023-10-10 11:32:33,125 INFO    wandb-upload_2:26601 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpgd6j7hwzwandb/8xssabqq-diff.patch
+2023-10-10 11:32:33,126 INFO    wandb-upload_0:26601 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpgd6j7hwzwandb/kgci9dm0-wandb-metadata.json
+2023-10-10 11:32:33,143 INFO    wandb-upload_3:26601 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpgd6j7hwzwandb/yag1jcmq-events.out.tfevents.1696917751.Adityas-MacBook-Pro.local.26549.0
+2023-10-10 11:32:33,360 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/events.out.tfevents.1696917751.Adityas-MacBook-Pro.local.26549.0
+2023-10-10 11:32:33,532 DEBUG   SenderThread:26601 [sender.py:send():380] send: exit
+2023-10-10 11:32:33,532 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: status_report
+2023-10-10 11:32:33,532 INFO    SenderThread:26601 [sender.py:send_exit():585] handling exit code: 1
+2023-10-10 11:32:33,532 INFO    SenderThread:26601 [sender.py:send_exit():587] handling runtime: 3
+2023-10-10 11:32:33,533 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 11:32:33,533 INFO    SenderThread:26601 [sender.py:send_exit():593] send defer
+2023-10-10 11:32:33,533 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:33,534 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 0
+2023-10-10 11:32:33,534 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:33,534 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 0
+2023-10-10 11:32:33,534 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 1
+2023-10-10 11:32:33,534 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:33,534 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 1
+2023-10-10 11:32:33,535 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:33,535 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 1
+2023-10-10 11:32:33,535 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 2
+2023-10-10 11:32:33,535 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:33,535 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 2
+2023-10-10 11:32:33,535 INFO    HandlerThread:26601 [system_monitor.py:finish():190] Stopping system monitor
+2023-10-10 11:32:33,535 DEBUG   SystemMonitor:26601 [system_monitor.py:_start():159] Starting system metrics aggregation loop
+2023-10-10 11:32:33,535 DEBUG   SystemMonitor:26601 [system_monitor.py:_start():166] Finished system metrics aggregation loop
+2023-10-10 11:32:33,535 INFO    HandlerThread:26601 [interfaces.py:finish():202] Joined cpu monitor
+2023-10-10 11:32:33,535 DEBUG   SystemMonitor:26601 [system_monitor.py:_start():170] Publishing last batch of metrics
+2023-10-10 11:32:33,535 INFO    HandlerThread:26601 [interfaces.py:finish():202] Joined disk monitor
+2023-10-10 11:32:33,536 INFO    HandlerThread:26601 [interfaces.py:finish():202] Joined gpuapple monitor
+2023-10-10 11:32:33,536 INFO    HandlerThread:26601 [interfaces.py:finish():202] Joined memory monitor
+2023-10-10 11:32:33,536 INFO    HandlerThread:26601 [interfaces.py:finish():202] Joined network monitor
+2023-10-10 11:32:33,536 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:33,536 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 2
+2023-10-10 11:32:33,536 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 3
+2023-10-10 11:32:33,536 DEBUG   SenderThread:26601 [sender.py:send():380] send: telemetry
+2023-10-10 11:32:33,536 DEBUG   SenderThread:26601 [sender.py:send():380] send: stats
+2023-10-10 11:32:33,536 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:33,536 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 3
+2023-10-10 11:32:33,536 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:33,536 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 3
+2023-10-10 11:32:33,536 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 4
+2023-10-10 11:32:33,536 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:33,536 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 4
+2023-10-10 11:32:34,363 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/output.log
+2023-10-10 11:32:34,363 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/wandb-summary.json
+2023-10-10 11:32:36,370 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/output.log
+2023-10-10 11:32:40,127 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: poll_exit
+2023-10-10 11:32:40,127 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: status_report
+2023-10-10 11:32:40,127 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:40,128 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: keepalive
+2023-10-10 11:32:40,128 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 4
+2023-10-10 11:32:40,128 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 5
+2023-10-10 11:32:40,128 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: poll_exit
+2023-10-10 11:32:40,128 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:40,128 DEBUG   SenderThread:26601 [sender.py:send():380] send: history
+2023-10-10 11:32:40,128 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 5
+2023-10-10 11:32:40,128 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 11:32:40,129 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 11:32:40,129 DEBUG   SenderThread:26601 [sender.py:send():380] send: history
+2023-10-10 11:32:40,129 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 11:32:40,129 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 11:32:40,129 DEBUG   SenderThread:26601 [sender.py:send():380] send: summary
+2023-10-10 11:32:40,129 INFO    SenderThread:26601 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 11:32:40,129 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:40,129 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 5
+2023-10-10 11:32:40,129 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 6
+2023-10-10 11:32:40,129 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:40,129 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 6
+2023-10-10 11:32:40,129 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:40,129 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 6
+2023-10-10 11:32:40,131 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: status_report
+2023-10-10 11:32:40,388 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/wandb-summary.json
+2023-10-10 11:32:40,614 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 7
+2023-10-10 11:32:40,615 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:40,615 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 7
+2023-10-10 11:32:40,615 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:40,615 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 7
+2023-10-10 11:32:41,391 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/config.yaml
+2023-10-10 11:32:43,557 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 8
+2023-10-10 11:32:43,558 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:43,558 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 8
+2023-10-10 11:32:43,558 DEBUG   SenderThread:26601 [sender.py:send_request():407] send_request: defer
+2023-10-10 11:32:43,558 INFO    SenderThread:26601 [sender.py:send_request_defer():609] handle sender defer: 8
+2023-10-10 11:32:43,558 INFO    SenderThread:26601 [job_builder.py:build():281] Attempting to build job artifact
+2023-10-10 11:32:43,559 INFO    SenderThread:26601 [job_builder.py:_get_source_type():393] is repo sourced job
+2023-10-10 11:32:43,560 INFO    SenderThread:26601 [job_builder.py:build():369] adding wandb-job metadata file
+2023-10-10 11:32:43,563 INFO    SenderThread:26601 [sender.py:transition_state():613] send defer: 9
+2023-10-10 11:32:43,563 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 11:32:43,563 DEBUG   SenderThread:26601 [sender.py:send():380] send: artifact
+2023-10-10 11:32:43,563 INFO    HandlerThread:26601 [handler.py:handle_request_defer():170] handle defer: 9
+2023-10-10 11:32:44,403 INFO    Thread-12 :26601 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/output.log
+2023-10-10 11:32:44,562 DEBUG   HandlerThread:26601 [handler.py:handle_request():144] handle_request: keepalive
+2023-10-10 11:32:45,430 WARNING StreamThr :26601 [internal.py:is_dead():414] Internal process exiting, parent pid 26549 disappeared
+2023-10-10 11:32:45,430 ERROR   StreamThr :26601 [internal.py:wandb_internal():152] Internal process shutdown.
+2023-10-10 11:32:45,563 INFO    HandlerThread:26601 [handler.py:finish():844] shutting down handler
+2023-10-10 11:32:45,570 INFO    WriterThread:26601 [datastore.py:close():294] close: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/run-i35j950q.wandb
+2023-10-10 11:32:46,130 INFO    wandb-upload_2:26601 [upload_job.py:push():86] Skipped uploading /Users/stav.42/Library/Application Support/wandb/artifacts/staging/tmphmailygv
+2023-10-10 11:32:46,130 INFO    wandb-upload_0:26601 [upload_job.py:push():86] Skipped uploading /Users/stav.42/Library/Application Support/wandb/artifacts/staging/tmp3l19v4ek
+2023-10-10 11:32:46,844 INFO    wandb-upload_1:26601 [upload_job.py:push():89] Uploaded file /Users/stav.42/Library/Application Support/wandb/artifacts/staging/tmp3nhu3ni5
+2023-10-10 11:32:49,402 INFO    SenderThread:26601 [sender.py:send_artifact():1456] sent artifact job-https___github.com_Stav42_RL_Library.git_cartpole_ppo_tparallel.py - {'id': 'QXJ0aWZhY3Q6NTk5NTQ2OTU1', 'state': 'PENDING', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjEwNTM1OTc4Mg==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6NTk5NTQ1MjQ0', 'versionIndex': 4}}}
+2023-10-10 11:32:49,402 INFO    SenderThread:26601 [sender.py:finish():1534] shutting down sender
+2023-10-10 11:32:49,402 INFO    SenderThread:26601 [dir_watcher.py:finish():358] shutting down directory watcher
+2023-10-10 11:32:49,417 INFO    SenderThread:26601 [dir_watcher.py:finish():388] scan: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files
+2023-10-10 11:32:49,418 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/diff.patch diff.patch
+2023-10-10 11:32:49,418 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/events.out.tfevents.1696917751.Adityas-MacBook-Pro.local.26549.0 events.out.tfevents.1696917751.Adityas-MacBook-Pro.local.26549.0
+2023-10-10 11:32:49,418 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/requirements.txt requirements.txt
+2023-10-10 11:32:49,418 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/output.log output.log
+2023-10-10 11:32:49,419 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/config.yaml config.yaml
+2023-10-10 11:32:49,419 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/wandb-summary.json wandb-summary.json
+2023-10-10 11:32:49,419 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/conda-environment.yaml conda-environment.yaml
+2023-10-10 11:32:49,419 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/wandb-metadata.json wandb-metadata.json
+2023-10-10 11:32:49,420 INFO    SenderThread:26601 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/code/cartpole/ppo/tparallel.py code/cartpole/ppo/tparallel.py
+2023-10-10 11:32:49,420 INFO    SenderThread:26601 [file_pusher.py:finish():175] shutting down file pusher
+2023-10-10 11:32:49,420 INFO    SenderThread:26601 [file_pusher.py:join():181] waiting for file pusher
+2023-10-10 11:32:50,183 INFO    wandb-upload_2:26601 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/requirements.txt
+2023-10-10 11:32:50,188 INFO    wandb-upload_0:26601 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/output.log
+2023-10-10 11:32:50,196 INFO    wandb-upload_1:26601 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/config.yaml
+2023-10-10 11:32:50,377 INFO    wandb-upload_3:26601 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpgd6j7hwzwandb/djk3qvey-events.out.tfevents.1696917751.Adityas-MacBook-Pro.local.26549.0
+2023-10-10 11:32:50,735 INFO    wandb-upload_5:26601 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/conda-environment.yaml
+2023-10-10 11:32:50,736 INFO    wandb-upload_4:26601 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_113228-i35j950q/files/wandb-summary.json
+2023-10-10 11:32:51,438 INFO    SenderThread:26601 [file_stream.py:finish():595] file stream finish called
+2023-10-10 11:32:51,860 INFO    SenderThread:26601 [file_stream.py:finish():599] file stream finish is done

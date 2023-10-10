@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--num_envs', type=int, default=8, help="number of environments to activate")
     parser.add_argument('--total_timesteps', type=int, default=100000, help="number of global steps to execute")
     parser.add_argument('--num_steps', type=int, default=800, help="the number of steps to run in each environment per policy rollout")
-    parser.add_argument('--update-epochs', type=int, default=5, help="the K epochs to update the policy")
+    parser.add_argument('--update-epochs', type=int, default=3, help="the K epochs to update the policy")
     parser.add_argument('--description', type=str, required=True, help="One-word-description for experiment name")
     parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggle learning rate annealing for policy and value networks")

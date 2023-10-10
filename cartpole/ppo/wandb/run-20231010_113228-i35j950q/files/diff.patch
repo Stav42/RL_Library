@@ -1,0 +1,126 @@
+diff --git a/cartpole/ppo/__pycache__/helper.cpython-39.pyc b/cartpole/ppo/__pycache__/helper.cpython-39.pyc
+index 8d22391..d4b7e90 100644
+Binary files a/cartpole/ppo/__pycache__/helper.cpython-39.pyc and b/cartpole/ppo/__pycache__/helper.cpython-39.pyc differ
+diff --git a/cartpole/ppo/helper.py b/cartpole/ppo/helper.py
+index 8a36c9e..0e3e246 100644
+--- a/cartpole/ppo/helper.py
++++ b/cartpole/ppo/helper.py
+@@ -19,7 +19,7 @@ def parse_args():
+     parser.add_argument('--num_envs', type=int, default=8, help="number of environments to activate")
+     parser.add_argument('--total_timesteps', type=int, default=100000, help="number of global steps to execute")
+     parser.add_argument('--num_steps', type=int, default=800, help="the number of steps to run in each environment per policy rollout")
+-    parser.add_argument('--update-epochs', type=int, default=5, help="the K epochs to update the policy")
++    parser.add_argument('--update-epochs', type=int, default=3, help="the K epochs to update the policy")
+     parser.add_argument('--description', type=str, required=True, help="One-word-description for experiment name")
+     parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
+         help="Toggle learning rate annealing for policy and value networks")
+diff --git a/cartpole/ppo/tparallel.py b/cartpole/ppo/tparallel.py
+index 6338caa..2521976 100644
+--- a/cartpole/ppo/tparallel.py
++++ b/cartpole/ppo/tparallel.py
+@@ -115,6 +115,9 @@ class Simulation:
+         self.log_avg_return = []
+         self.log_avg_value = []
+ 
++        self.upd_rollout_time = 0
++        self.upd_rollout_steps = 0
++
+         self.old_log_prob = torch.zeros((args.num_steps, args.num_envs))
+         self.training_step = 0
+         self.eps_run = 0
+@@ -235,8 +238,9 @@ class Simulation:
+         batch_size = args.batch_size
+         mini_batch_size = args.minibatch_size
+         indices = np.random.permutation(batch_size)
++        init_time = time.time()
+         for epoch in range(args.update_epochs):
+-            np.random.shuffle(indices)                
++            np.random.shuffle(indices)  
+             for i in range(n_mini_batch):
+                 print("Epoch|Batch: ", epoch, "|", i)
+                 mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
+@@ -244,7 +248,10 @@ class Simulation:
+                 mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
+                 loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
+                 loss_pol.backward(retain_graph=True)
+-                old_indices = mini_batch_indices
++                self.upd_rollout_steps += mini_batch_gae.shape[1]
++                print("Size is: ", mini_batch_gae.shape[1])
++                self.upd_rollout_time += init_time - time.time()
++                self.writer.add_scalar('rollouts for pol upd vs time taken', scalar_value=self.upd_rollout_time, global_step=self.upd_rollout_steps)
+         self.pol_optimizer.step()
+         self.pol_optimizer.zero_grad()
+ 
+@@ -363,7 +370,6 @@ class Simulation:
+             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
+             step_time = 0
+             update_start = time.time()
+-            num_steps = 0
+             for step in range(0, args.num_steps):
+                 print("Step: ", step)
+                 global_step+=1*args.num_envs
+@@ -377,15 +383,17 @@ class Simulation:
+                 update_start = time.time()
+                 step_time+=step_dur
+ 
++            self.writer.add_scalar('Sampling rollout vs time', scalar_value=time.time()-initial_time, global_step=global_step)
++            self.writer.add_scalar('Average Value post rollouts amongst envs', scalar_value=self.value_buffer.mean(), global_step=global_step)
++            self.writer.add_scalar('Average Returns post rollout amongst envs', scalar_value=self.reward_buffer.mean(), global_step=global_step)
++
+             self.update_steps_buffer.append(global_step)
+             self.update_time_buffer.append(step_time)
+             step_time/=global_step
+             self.eps_run+=1
+             update_time = time.time()
+-            update_dur = update_time - train_time
+             train_time = time.time()
+ 
+-            self.writer.add_scalar('timesteps across all envs', scalar_value=global_step, walltime=True, global_step=time.time()-initial_time)
+             ## Update 
+             self.get_return_buffer()
+             self.get_td_buffer()
+diff --git a/cartpole/ppo/wandb/debug-cli.stav.42.log b/cartpole/ppo/wandb/debug-cli.stav.42.log
+index 01bb4ec..2ba451c 100644
+--- a/cartpole/ppo/wandb/debug-cli.stav.42.log
++++ b/cartpole/ppo/wandb/debug-cli.stav.42.log
+@@ -433,3 +433,13 @@
+ 2023-10-09 22:19:36 INFO No path found after runs/InvertedPendulum-v4__Tensorboard__09-Oct-2023__1696869935/events.out.tfevents.1696869935.Adityas-MacBook-Pro.local.24039.0
+ 2023-10-09 22:19:37 INFO No path found after runs/InvertedPendulum-v4__Tensorboard__09-Oct-2023__1696869935/events.out.tfevents.1696869935.Adityas-MacBook-Pro.local.24039.0
+ 2023-10-09 22:19:38 INFO No path found after runs/InvertedPendulum-v4__Tensorboard__09-Oct-2023__1696869935/events.out.tfevents.1696869935.Adityas-MacBook-Pro.local.24039.0
++2023-10-10 11:30:47 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:48 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:49 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:49 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:49 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:50 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:51 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:52 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:53 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
++2023-10-10 11:30:54 INFO No path found after runs/InvertedPendulum-v4__logging_test__10-Oct-2023__1696917647/events.out.tfevents.1696917647.Adityas-MacBook-Pro.local.26403.0
+diff --git a/cartpole/ppo/wandb/debug-internal.log b/cartpole/ppo/wandb/debug-internal.log
+index 91293da..ae4fe9a 120000
+--- a/cartpole/ppo/wandb/debug-internal.log
++++ b/cartpole/ppo/wandb/debug-internal.log
+@@ -1 +1 @@
+-run-20231009_221531-lxmcw9rw/logs/debug-internal.log
+\ No newline at end of file
++run-20231010_113228-i35j950q/logs/debug-internal.log
+\ No newline at end of file
+diff --git a/cartpole/ppo/wandb/debug.log b/cartpole/ppo/wandb/debug.log
+index 8bb94af..fcba5e0 120000
+--- a/cartpole/ppo/wandb/debug.log
++++ b/cartpole/ppo/wandb/debug.log
+@@ -1 +1 @@
+-run-20231009_221531-lxmcw9rw/logs/debug.log
+\ No newline at end of file
++run-20231010_113228-i35j950q/logs/debug.log
+\ No newline at end of file
+diff --git a/cartpole/ppo/wandb/latest-run b/cartpole/ppo/wandb/latest-run
+index ea3c12d..c1c7d30 120000
+--- a/cartpole/ppo/wandb/latest-run
++++ b/cartpole/ppo/wandb/latest-run
+@@ -1 +1 @@
+-run-20231009_221531-lxmcw9rw
+\ No newline at end of file
++run-20231010_113228-i35j950q
+\ No newline at end of file
