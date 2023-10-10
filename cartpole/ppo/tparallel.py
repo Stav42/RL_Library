@@ -18,6 +18,8 @@ from torch.utils.tensorboard import SummaryWriter
 from debugging import check_values_same
 from helper import parse_args
 import functools
+from multiprocessing import Pool, Manager
+
 
 class Policy_Network():
 
@@ -250,9 +252,15 @@ class Simulation:
                 loss_pol.backward(retain_graph=True)
                 self.upd_rollout_steps += mini_batch_gae.shape[0]
                 self.upd_rollout_time += time.time() - init_time
+                self.update_steps_buffer.append(self.upd_rollout_steps)
+                self.update_time_buffer.append(self.upd_rollout_time)
                 self.writer.add_scalar('rollouts for pol upd vs time taken', scalar_value=self.upd_rollout_time, global_step=self.upd_rollout_steps)
+        
+        table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
+        self.wandb_logging(table=table, title="Update (backprop) time per rollout", x_title="Update Steps", y_title="Time (s)")
         self.pol_optimizer.step()
         self.pol_optimizer.zero_grad()
+
 
     def value_update(self):
         n_mini_batch = args.num_minibatches
@@ -354,6 +362,13 @@ class Simulation:
         for arg, value in vars(args).items():
             print(f"{arg}: {value}")
 
+    def wandb_logging(self, title, table, x_title, y_title):
+        table_rollout = wandb.Table(data=table, columns=[x_title, y_title])
+        wandb.log(
+            {title: wandb.plot.line(table_rollout, x_title, y_title, title=title)}
+        )        
+
+
     def train(self, seed=1):
         
         train_time = time.time()
@@ -366,7 +381,9 @@ class Simulation:
         print(obs.shape)
         global_step_list = []
         global_time_list = []
-        
+        global_value_list = []
+        global_return_list = []
+
         for update in range(1, num_upd+1):
             print("Update: ", update)
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
@@ -383,20 +400,20 @@ class Simulation:
                 self.reward_buffer[step, :] = torch.tensor(reward)
                 step_dur = time.time()-update_start
                 step_time+=step_dur
-
             new_time = time.time()
             difference = new_time-update_start
             global_time+=difference
             global_step_list.append(global_step)
             global_time_list.append(global_time)
-            print(f"Global step value: {global_step}")
-            table_rollout = [[x, y/x] for (x, y) in zip(global_step_list, global_time_list)]
-            table_rollout = wandb.Table(data=table_rollout, columns=["rollouts", "time per rollout"])
-            wandb.log(
-                {"Sampling Rollout time per step": wandb.plot.line(table_rollout, "rollouts", "time per rollout", title="Sampling time per Step")}
-            )
+            global_value_list.append(self.value_buffer.mean())
+            global_return_list.append(self.return_buffer.mean())
+            table = [[x, y/x] for (x, y) in zip(global_step_list, global_time_list)]
+            self.wandb_logging(title="Sampling Rollout Time per step", table=table, x_title="Steps", y_title="Time Per Rollout")
+            table = [[x, y] for (x, y) in zip(global_step_list, global_value_list)]
+            self.wandb_logging(title="Average value", table=table, x_title="Steps", y_title="Average Value")
+            table = [[x, y] for (x, y) in zip(global_step_list, global_return_list)]
+            self.wandb_logging(title="Average returns", table=table, x_title="Steps", y_title="Average Returns")
 
-            print(f"Global step value: {global_step}")
             self.writer.add_scalar('Average Value post rollouts amongst envs', scalar_value=self.value_buffer.mean(), global_step=global_step)
             self.writer.add_scalar('Average Returns post rollout amongst envs', scalar_value=self.reward_buffer.mean(), global_step=global_step)
 

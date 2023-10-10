@@ -1,0 +1,42 @@
+{
+    "os": "macOS-13.4.1-arm64-arm-64bit",
+    "python": "3.9.16",
+    "heartbeatAt": "2023-10-10T08:22:47.335049",
+    "startedAt": "2023-10-10T08:22:45.942619",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--track",
+        "1",
+        "--description",
+        "wandblogging"
+    ],
+    "state": "running",
+    "program": "/Users/stav.42/RL_Library/cartpole/ppo/tparallel.py",
+    "codePathLocal": "tparallel.py",
+    "codePath": "cartpole/ppo/tparallel.py",
+    "git": {
+        "remote": "https://github.com/Stav42/RL_Library.git",
+        "commit": "e886a764025f1ba101d6dfbbcd599c11e75818c3"
+    },
+    "email": "vaditya@iitk.ac.in",
+    "root": "/Users/stav.42/RL_Library",
+    "host": "Adityas-MacBook-Pro.local",
+    "username": "stav.42",
+    "executable": "/Users/stav.42/miniconda3/envs/pytorch_RL/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "disk": {
+        "/": {
+            "total": 228.27386474609375,
+            "used": 126.30274963378906
+        }
+    },
+    "gpuapple": {
+        "type": "arm",
+        "vendor": "Apple"
+    },
+    "memory": {
+        "total": 8.0
+    }
+}
