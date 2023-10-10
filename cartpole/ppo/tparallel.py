@@ -232,8 +232,7 @@ class Simulation:
         mini_batch_log_probs = log_prob_buffer.reshape(-1)[mini_batch_indices]
         mini_batch_gae = gae_buffer.reshape(-1)[mini_batch_indices]
         loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
-        with lock:
-            loss_pol.backward(retain_graph=True)
+        loss_pol.backward(retain_graph=True)
     
     def policy_update(self):
         n_mini_batch = args.num_minibatches
@@ -242,19 +241,21 @@ class Simulation:
         indices = np.random.permutation(batch_size)
         m = Manager()
         lock = m.Lock()
-        init_time = time.time()
         with Pool() as pool:
             for epoch in range(args.update_epochs):
                 np.random.shuffle(indices)  
                 tasks = []
+                init_time = time.time()
                 for i in range(n_mini_batch):
                     print("Epoch|Batch: ", epoch, "|", i)
                     mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
                     tasks.append((mini_batch_indices, self.log_prob_buffer, self.gae_buffer, lock))
-
                 pool.map(self.mini_batch_update, tasks)
-                        
-        table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
+                self.upd_rollout_steps+=mini_batch_size
+                self.update_time_buffer.append(time.time()-init_time)
+                self.update_steps_buffer.append(self.upd_rollout_steps)
+            
+        table = [[x, y] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
         self.wandb_logging(table=table, title="Update (backprop) time per rollout", x_title="Update Steps", y_title="Time (s)")
         self.pol_optimizer.step()
         self.pol_optimizer.zero_grad()
