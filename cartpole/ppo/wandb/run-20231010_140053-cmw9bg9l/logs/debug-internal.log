@@ -2810,3 +2810,271 @@ _info {
 2023-10-10 14:05:42,216 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
 2023-10-10 14:05:42,220 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
 2023-10-10 14:05:42,224 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:42,660 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:05:42,662 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0
+2023-10-10 14:05:43,203 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:43,203 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:43,204 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:43,666 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:05:43,666 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/output.log
+2023-10-10 14:05:43,666 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0
+2023-10-10 14:05:44,210 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:44,210 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:44,211 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:44,211 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:44,211 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:44,211 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:44,668 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:05:44,668 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0
+2023-10-10 14:05:45,221 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:45,221 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:45,222 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:45,222 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:45,222 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:45,222 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:45,222 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:45,222 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:45,223 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:45,442 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: stop_status
+2023-10-10 14:05:45,442 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: internal_messages
+2023-10-10 14:05:45,442 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: stop_status
+2023-10-10 14:05:45,674 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:05:45,674 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/output.log
+2023-10-10 14:05:45,675 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0
+2023-10-10 14:05:46,064 DEBUG   SenderThread:34089 [sender.py:send():380] send: config
+2023-10-10 14:05:46,228 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:46,228 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:46,228 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:46,486 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: log_artifact
+2023-10-10 14:05:46,486 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: log_artifact
+2023-10-10 14:05:46,503 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: partial_history
+2023-10-10 14:05:46,681 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:05:46,682 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0
+2023-10-10 14:05:46,682 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_created():271] file/dir created: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_59_fd4bce9dcb8a291a5916.table.json
+2023-10-10 14:05:46,683 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table
+2023-10-10 14:05:47,505 INFO    wandb-upload_3:34089 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpwwiz9rl6wandb/ncyajac6-media/table/Update (backprop) time per rollout_table_59_fd4bce9dcb8a291a5916.table.json
+2023-10-10 14:05:47,689 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/output.log
+2023-10-10 14:05:48,920 INFO    wandb-upload_2:34089 [upload_job.py:push():89] Uploaded file /Users/stav.42/Library/Application Support/wandb/artifacts/staging/tmp421ljke8
+2023-10-10 14:05:49,311 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: poll_exit
+2023-10-10 14:05:50,476 INFO    SenderThread:34089 [sender.py:send_request_log_artifact():1444] logged artifact run-cmw9bg9l-Updatebackproptimeperrollout_table - {'id': 'QXJ0aWZhY3Q6NTk5Njc4NjY2', 'state': 'PENDING', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjEwNTU1MDQ4OA==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6NTk5Njc4Mzg2', 'versionIndex': 13}}}
+2023-10-10 14:05:50,482 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: status_report
+2023-10-10 14:05:50,995 DEBUG   SenderThread:34089 [sender.py:send():380] send: files
+2023-10-10 14:05:50,995 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file media/table/Update (backprop) time per rollout_table_59_fd4bce9dcb8a291a5916.table.json with policy now
+2023-10-10 14:05:50,995 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:50,995 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:50,996 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:50,996 DEBUG   SenderThread:34089 [sender.py:send():380] send: exit
+2023-10-10 14:05:50,996 INFO    SenderThread:34089 [sender.py:send_exit():585] handling exit code: 0
+2023-10-10 14:05:50,997 INFO    SenderThread:34089 [sender.py:send_exit():587] handling runtime: 292
+2023-10-10 14:05:50,997 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:50,997 INFO    SenderThread:34089 [sender.py:send_exit():593] send defer
+2023-10-10 14:05:50,997 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: poll_exit
+2023-10-10 14:05:50,997 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:50,998 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 0
+2023-10-10 14:05:50,998 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:50,998 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 0
+2023-10-10 14:05:50,998 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 1
+2023-10-10 14:05:51,000 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:51,000 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 1
+2023-10-10 14:05:51,000 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:51,000 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 1
+2023-10-10 14:05:51,000 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 2
+2023-10-10 14:05:51,000 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:51,000 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 2
+2023-10-10 14:05:51,000 INFO    HandlerThread:34089 [system_monitor.py:finish():190] Stopping system monitor
+2023-10-10 14:05:51,000 DEBUG   SystemMonitor:34089 [system_monitor.py:_start():166] Finished system metrics aggregation loop
+2023-10-10 14:05:51,001 DEBUG   SystemMonitor:34089 [system_monitor.py:_start():170] Publishing last batch of metrics
+2023-10-10 14:05:51,001 INFO    HandlerThread:34089 [interfaces.py:finish():202] Joined cpu monitor
+2023-10-10 14:05:51,001 INFO    HandlerThread:34089 [interfaces.py:finish():202] Joined disk monitor
+2023-10-10 14:05:51,272 INFO    HandlerThread:34089 [interfaces.py:finish():202] Joined gpuapple monitor
+2023-10-10 14:05:51,272 INFO    HandlerThread:34089 [interfaces.py:finish():202] Joined memory monitor
+2023-10-10 14:05:51,273 INFO    HandlerThread:34089 [interfaces.py:finish():202] Joined network monitor
+2023-10-10 14:05:51,275 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:51,275 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 2
+2023-10-10 14:05:51,275 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 3
+2023-10-10 14:05:51,275 DEBUG   SenderThread:34089 [sender.py:send():380] send: stats
+2023-10-10 14:05:51,275 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:51,275 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 3
+2023-10-10 14:05:51,276 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:51,276 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 3
+2023-10-10 14:05:51,276 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 4
+2023-10-10 14:05:51,276 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:51,276 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 4
+2023-10-10 14:05:51,712 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:05:51,712 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/config.yaml
+2023-10-10 14:05:51,712 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/output.log
+2023-10-10 14:05:51,972 INFO    wandb-upload_4:34089 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpwwiz9rl6wandb/fp6dt1il-media/table/Update (backprop) time per rollout_table_59_fd4bce9dcb8a291a5916.table.json
+2023-10-10 14:05:58,279 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: keepalive
+2023-10-10 14:05:58,280 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: status_report
+2023-10-10 14:05:58,281 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:58,282 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 4
+2023-10-10 14:05:58,283 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 5
+2023-10-10 14:05:58,283 DEBUG   SenderThread:34089 [sender.py:send():380] send: history
+2023-10-10 14:05:58,283 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:58,283 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: summary_record
+2023-10-10 14:05:58,284 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 5
+2023-10-10 14:05:58,285 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:58,286 DEBUG   SenderThread:34089 [sender.py:send():380] send: summary
+2023-10-10 14:05:58,287 INFO    SenderThread:34089 [sender.py:_save_file():1378] saving file wandb-summary.json with policy end
+2023-10-10 14:05:58,287 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:58,287 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 5
+2023-10-10 14:05:58,287 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 6
+2023-10-10 14:05:58,287 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:58,287 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 6
+2023-10-10 14:05:58,288 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:58,288 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 6
+2023-10-10 14:05:58,288 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 7
+2023-10-10 14:05:58,288 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: status_report
+2023-10-10 14:05:58,288 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:58,288 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 7
+2023-10-10 14:05:58,288 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:58,289 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 7
+2023-10-10 14:05:58,766 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:05:59,336 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: keepalive
+2023-10-10 14:05:59,533 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 8
+2023-10-10 14:05:59,534 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:59,534 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 8
+2023-10-10 14:05:59,534 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:05:59,534 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 8
+2023-10-10 14:05:59,535 INFO    SenderThread:34089 [job_builder.py:build():281] Attempting to build job artifact
+2023-10-10 14:05:59,537 INFO    SenderThread:34089 [job_builder.py:_get_source_type():393] is repo sourced job
+2023-10-10 14:05:59,541 INFO    SenderThread:34089 [job_builder.py:build():369] adding wandb-job metadata file
+2023-10-10 14:05:59,549 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 9
+2023-10-10 14:05:59,549 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:05:59,549 DEBUG   SenderThread:34089 [sender.py:send():380] send: artifact
+2023-10-10 14:05:59,549 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 9
+2023-10-10 14:05:59,775 INFO    Thread-12 :34089 [dir_watcher.py:_on_file_modified():288] file/dir modified: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/output.log
+2023-10-10 14:06:01,636 INFO    wandb-upload_3:34089 [upload_job.py:push():86] Skipped uploading /Users/stav.42/Library/Application Support/wandb/artifacts/staging/tmpwzvd_p8k
+2023-10-10 14:06:02,197 INFO    wandb-upload_2:34089 [upload_job.py:push():89] Uploaded file /Users/stav.42/Library/Application Support/wandb/artifacts/staging/tmpv4gd3xju
+2023-10-10 14:06:02,971 INFO    wandb-upload_1:34089 [upload_job.py:push():89] Uploaded file /Users/stav.42/Library/Application Support/wandb/artifacts/staging/tmp0fuqj126
+2023-10-10 14:06:04,352 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: keepalive
+2023-10-10 14:06:05,322 INFO    SenderThread:34089 [sender.py:send_artifact():1456] sent artifact job-https___github.com_Stav42_RL_Library.git_cartpole_ppo_tparallel.py - {'id': 'QXJ0aWZhY3Q6NTk5Njc4ODEz', 'state': 'PENDING', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjEwNTM1OTc4Mg==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6NTk5NjcyMDMw', 'versionIndex': 21}}}
+2023-10-10 14:06:05,323 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:06:05,323 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: status_report
+2023-10-10 14:06:05,323 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 9
+2023-10-10 14:06:05,323 INFO    SenderThread:34089 [dir_watcher.py:finish():358] shutting down directory watcher
+2023-10-10 14:06:05,799 INFO    SenderThread:34089 [dir_watcher.py:finish():388] scan: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files
+2023-10-10 14:06:05,799 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/diff.patch diff.patch
+2023-10-10 14:06:05,799 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/requirements.txt requirements.txt
+2023-10-10 14:06:05,799 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/output.log output.log
+2023-10-10 14:06:05,801 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/config.yaml config.yaml
+2023-10-10 14:06:05,802 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json wandb-summary.json
+2023-10-10 14:06:05,804 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/conda-environment.yaml conda-environment.yaml
+2023-10-10 14:06:05,806 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0 events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0
+2023-10-10 14:06:05,809 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-metadata.json wandb-metadata.json
+2023-10-10 14:06:05,810 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/code/cartpole/ppo/tparallel.py code/cartpole/ppo/tparallel.py
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_18_a0455285b1f2c5038294.table.json media/table/Average returns_table_18_a0455285b1f2c5038294.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_45_592278694cd5e9bf2cd2.table.json media/table/Average value_table_45_592278694cd5e9bf2cd2.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_39_507b83a062b5e8c08d48.table.json media/table/Update (backprop) time per rollout_table_39_507b83a062b5e8c08d48.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_20_828f62231dd76f4edd9d.table.json media/table/Sampling Rollout Time per step_table_20_828f62231dd76f4edd9d.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_48_560ec8d169e297d0184e.table.json media/table/Sampling Rollout Time per step_table_48_560ec8d169e297d0184e.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_42_87d5b121acaa33cb95c7.table.json media/table/Average returns_table_42_87d5b121acaa33cb95c7.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_21_71e332c1930d5493d05a.table.json media/table/Average value_table_21_71e332c1930d5493d05a.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_31_0832fd98fef2c6aebd68.table.json media/table/Update (backprop) time per rollout_table_31_0832fd98fef2c6aebd68.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_3_fab377f57ed4bca10ce2.table.json media/table/Update (backprop) time per rollout_table_3_fab377f57ed4bca10ce2.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_1_4dce1eb5e97e671d344f.table.json media/table/Average value_table_1_4dce1eb5e97e671d344f.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_26_b16486dd4068cdcfd83e.table.json media/table/Average returns_table_26_b16486dd4068cdcfd83e.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_0_849035bc9b24d7c32a1e.table.json media/table/Sampling Rollout Time per step_table_0_849035bc9b24d7c32a1e.table.json
+2023-10-10 14:06:05,811 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_13_c4d920aee1ecf5ffe4bf.table.json media/table/Average value_table_13_c4d920aee1ecf5ffe4bf.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_35_9d2e36aa3f5ccf49e4e0.table.json media/table/Update (backprop) time per rollout_table_35_9d2e36aa3f5ccf49e4e0.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_57_cf68fae22d23ed997a5c.table.json media/table/Average value_table_57_cf68fae22d23ed997a5c.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_24_5a96a4c43da3f058cd1d.table.json media/table/Sampling Rollout Time per step_table_24_5a96a4c43da3f058cd1d.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_25_41c6c56040e4c69e8594.table.json media/table/Average value_table_25_41c6c56040e4c69e8594.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_55_6682c7ff9fceade2fac7.table.json media/table/Update (backprop) time per rollout_table_55_6682c7ff9fceade2fac7.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_23_1660efaf16ee86678d5e.table.json media/table/Update (backprop) time per rollout_table_23_1660efaf16ee86678d5e.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_36_2576a396089118880c21.table.json media/table/Sampling Rollout Time per step_table_36_2576a396089118880c21.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_28_052af5690f86a0e42eb7.table.json media/table/Sampling Rollout Time per step_table_28_052af5690f86a0e42eb7.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_46_89707aadf239df962553.table.json media/table/Average returns_table_46_89707aadf239df962553.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_43_a729225aea49e541278b.table.json media/table/Update (backprop) time per rollout_table_43_a729225aea49e541278b.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_29_6e19a366340d732e8d1b.table.json media/table/Average value_table_29_6e19a366340d732e8d1b.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_7_5be5d84cd53fad6a4719.table.json media/table/Update (backprop) time per rollout_table_7_5be5d84cd53fad6a4719.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_44_10e31b29bf67bb5d648d.table.json media/table/Sampling Rollout Time per step_table_44_10e31b29bf67bb5d648d.table.json
+2023-10-10 14:06:05,812 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_47_d0dd8bb4772666e1100d.table.json media/table/Update (backprop) time per rollout_table_47_d0dd8bb4772666e1100d.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_2_3040c4a0b67b76ba5607.table.json media/table/Average returns_table_2_3040c4a0b67b76ba5607.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_10_8b27d98a29eced396a7c.table.json media/table/Average returns_table_10_8b27d98a29eced396a7c.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_54_f1df8cb2fce515ab3841.table.json media/table/Average returns_table_54_f1df8cb2fce515ab3841.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_30_2b1ed3106e3d1250b106.table.json media/table/Average returns_table_30_2b1ed3106e3d1250b106.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_12_c35258af446928692df3.table.json media/table/Sampling Rollout Time per step_table_12_c35258af446928692df3.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_11_91b1b313c9fb9fd17b85.table.json media/table/Update (backprop) time per rollout_table_11_91b1b313c9fb9fd17b85.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_22_82323fc28e7b48d4c5cf.table.json media/table/Average returns_table_22_82323fc28e7b48d4c5cf.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_53_68a488d477b30e0a5256.table.json media/table/Average value_table_53_68a488d477b30e0a5256.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_58_9db88452691b94c40d30.table.json media/table/Average returns_table_58_9db88452691b94c40d30.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_19_e704bd63ef115d095504.table.json media/table/Update (backprop) time per rollout_table_19_e704bd63ef115d095504.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_37_795c88760777ef3d00c9.table.json media/table/Average value_table_37_795c88760777ef3d00c9.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_32_6c686d57c269886e10aa.table.json media/table/Sampling Rollout Time per step_table_32_6c686d57c269886e10aa.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_14_0a0b31de49afe19e4cd6.table.json media/table/Average returns_table_14_0a0b31de49afe19e4cd6.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_41_898bf4cb6029d3200828.table.json media/table/Average value_table_41_898bf4cb6029d3200828.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_50_d32c1db2216966a0c1b2.table.json media/table/Average returns_table_50_d32c1db2216966a0c1b2.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_51_2de678259b0b53c6978b.table.json media/table/Update (backprop) time per rollout_table_51_2de678259b0b53c6978b.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_49_2684cb2300116580bac3.table.json media/table/Average value_table_49_2684cb2300116580bac3.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_38_629e0f6529d1f5b3c073.table.json media/table/Average returns_table_38_629e0f6529d1f5b3c073.table.json
+2023-10-10 14:06:05,813 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_33_ebb6d080066e868fd606.table.json media/table/Average value_table_33_ebb6d080066e868fd606.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_34_71f04639b009e68078da.table.json media/table/Average returns_table_34_71f04639b009e68078da.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_8_a0be15922842ba83ff8f.table.json media/table/Sampling Rollout Time per step_table_8_a0be15922842ba83ff8f.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average returns_table_6_7f7c13f33ea456b4079d.table.json media/table/Average returns_table_6_7f7c13f33ea456b4079d.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_17_8ac13910257b533d8256.table.json media/table/Average value_table_17_8ac13910257b533d8256.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_59_fd4bce9dcb8a291a5916.table.json media/table/Update (backprop) time per rollout_table_59_fd4bce9dcb8a291a5916.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_40_bd6fe2c1b9b6aeb6c4b5.table.json media/table/Sampling Rollout Time per step_table_40_bd6fe2c1b9b6aeb6c4b5.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_5_3f98bfe0f5c26bb3ff45.table.json media/table/Average value_table_5_3f98bfe0f5c26bb3ff45.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_15_53653bed898f4f912de1.table.json media/table/Update (backprop) time per rollout_table_15_53653bed898f4f912de1.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_16_d4936ba2d46a29942306.table.json media/table/Sampling Rollout Time per step_table_16_d4936ba2d46a29942306.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Update (backprop) time per rollout_table_27_b29341018b2836b7fc5b.table.json media/table/Update (backprop) time per rollout_table_27_b29341018b2836b7fc5b.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Average value_table_9_4c8e37153d5f0eddb0a7.table.json media/table/Average value_table_9_4c8e37153d5f0eddb0a7.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_56_1fe10882aa70dbc4e6ac.table.json media/table/Sampling Rollout Time per step_table_56_1fe10882aa70dbc4e6ac.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_52_793a18f808020571c794.table.json media/table/Sampling Rollout Time per step_table_52_793a18f808020571c794.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [dir_watcher.py:finish():402] scan save: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/media/table/Sampling Rollout Time per step_table_4_dbc478a66f251a9c3dfb.table.json media/table/Sampling Rollout Time per step_table_4_dbc478a66f251a9c3dfb.table.json
+2023-10-10 14:06:05,814 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 10
+2023-10-10 14:06:05,815 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:06:05,815 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 10
+2023-10-10 14:06:05,816 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:06:05,816 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 10
+2023-10-10 14:06:05,816 INFO    SenderThread:34089 [file_pusher.py:finish():175] shutting down file pusher
+2023-10-10 14:06:06,548 INFO    wandb-upload_3:34089 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/output.log
+2023-10-10 14:06:06,563 INFO    wandb-upload_0:34089 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/conda-environment.yaml
+2023-10-10 14:06:06,563 INFO    wandb-upload_2:34089 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/wandb-summary.json
+2023-10-10 14:06:06,569 INFO    wandb-upload_1:34089 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/config.yaml
+2023-10-10 14:06:06,777 INFO    wandb-upload_4:34089 [upload_job.py:push():131] Uploaded file /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/files/requirements.txt
+2023-10-10 14:06:06,904 INFO    wandb-upload_5:34089 [upload_job.py:push():131] Uploaded file /var/folders/f5/tz3zrky52t382vsv5zf3y6j00000gn/T/tmpwwiz9rl6wandb/bhg5ztl9-events.out.tfevents.1696926660.Adityas-MacBook-Pro.local.34035.0
+2023-10-10 14:06:07,106 INFO    Thread-11 :34089 [sender.py:transition_state():613] send defer: 11
+2023-10-10 14:06:07,109 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:06:07,109 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 11
+2023-10-10 14:06:07,110 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:06:07,110 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 11
+2023-10-10 14:06:07,110 INFO    SenderThread:34089 [file_pusher.py:join():181] waiting for file pusher
+2023-10-10 14:06:07,110 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 12
+2023-10-10 14:06:07,110 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:06:07,110 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 12
+2023-10-10 14:06:07,111 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:06:07,111 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 12
+2023-10-10 14:06:07,111 INFO    SenderThread:34089 [file_stream.py:finish():595] file stream finish called
+2023-10-10 14:06:08,497 INFO    SenderThread:34089 [file_stream.py:finish():599] file stream finish is done
+2023-10-10 14:06:08,497 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 13
+2023-10-10 14:06:08,497 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:06:08,498 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 13
+2023-10-10 14:06:08,498 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:06:08,498 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 13
+2023-10-10 14:06:08,498 INFO    SenderThread:34089 [sender.py:transition_state():613] send defer: 14
+2023-10-10 14:06:08,499 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: defer
+2023-10-10 14:06:08,499 DEBUG   SenderThread:34089 [sender.py:send():380] send: final
+2023-10-10 14:06:08,499 INFO    HandlerThread:34089 [handler.py:handle_request_defer():170] handle defer: 14
+2023-10-10 14:06:08,499 DEBUG   SenderThread:34089 [sender.py:send():380] send: footer
+2023-10-10 14:06:08,499 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: defer
+2023-10-10 14:06:08,499 INFO    SenderThread:34089 [sender.py:send_request_defer():609] handle sender defer: 14
+2023-10-10 14:06:08,500 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: poll_exit
+2023-10-10 14:06:08,501 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: server_info
+2023-10-10 14:06:08,501 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: poll_exit
+2023-10-10 14:06:08,502 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: server_info
+2023-10-10 14:06:08,505 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: get_summary
+2023-10-10 14:06:08,505 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: sampled_history
+2023-10-10 14:06:08,507 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: internal_messages
+2023-10-10 14:06:08,508 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: job_info
+2023-10-10 14:06:08,907 DEBUG   SenderThread:34089 [sender.py:send_request():407] send_request: job_info
+2023-10-10 14:06:08,908 INFO    MainThread:34089 [wandb_run.py:_footer_history_summary_info():3554] rendering history
+2023-10-10 14:06:08,909 INFO    MainThread:34089 [wandb_run.py:_footer_history_summary_info():3586] rendering summary
+2023-10-10 14:06:08,909 INFO    MainThread:34089 [wandb_run.py:_footer_sync_info():3513] logging synced files
+2023-10-10 14:06:08,910 DEBUG   HandlerThread:34089 [handler.py:handle_request():144] handle_request: shutdown
+2023-10-10 14:06:08,910 INFO    HandlerThread:34089 [handler.py:finish():844] shutting down handler
+2023-10-10 14:06:09,510 INFO    WriterThread:34089 [datastore.py:close():294] close: /Users/stav.42/RL_Library/cartpole/ppo/wandb/run-20231010_140053-cmw9bg9l/run-cmw9bg9l.wandb
+2023-10-10 14:06:09,912 INFO    SenderThread:34089 [sender.py:finish():1534] shutting down sender
+2023-10-10 14:06:09,912 INFO    SenderThread:34089 [file_pusher.py:finish():175] shutting down file pusher
+2023-10-10 14:06:09,912 INFO    SenderThread:34089 [file_pusher.py:join():181] waiting for file pusher
