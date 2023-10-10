@@ -238,7 +238,6 @@ class Simulation:
         for epoch in range(args.update_epochs):
             np.random.shuffle(indices)                
             for i in range(n_mini_batch):
-                print("Epoch|Batch: ", epoch, "|", i)
                 mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
                 mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
                 mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
@@ -365,7 +364,6 @@ class Simulation:
             update_start = time.time()
             num_steps = 0
             for step in range(0, args.num_steps):
-                print("Step: ", step)
                 global_step+=1*args.num_envs
                 action = self.sample_action(obs, step=step)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
@@ -392,7 +390,6 @@ class Simulation:
             self.get_gae_buffer(lmbda=0.99)
             self.policy_update()
             self.value_update()
-            print("Updated policy and critic!")
             self.log_data()
             self.flush_post_ep()
             self.old_log_prob = self.log_prob_buffer.clone()

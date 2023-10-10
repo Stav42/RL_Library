@@ -1,0 +1,124 @@
+diff --git a/cartpole/ppo/tparallel.py b/cartpole/ppo/tparallel.py
+index b00fa30..3a24a18 100644
+--- a/cartpole/ppo/tparallel.py
++++ b/cartpole/ppo/tparallel.py
+@@ -15,40 +15,12 @@ from typing import Optional
+ import wandb
+ from torch.utils.tensorboard import SummaryWriter
+ from debugging import check_values_same
+-
++from helper import parse_args
+ import functools
+ 
+-from datetime import date
+-today = date.today()
+-d = str(today.strftime("%b-%d-%Y"))
+-
+ torch.autograd.set_detect_anomaly(True)
+ 
+ 
+-def parse_args():
+-    parser =  argparse.ArgumentParser()
+-    parser.add_argument('--exp-name', type=str, default=d, help="name of this experiment")
+-    parser.add_argument('--gym-id', type=str, default="InvertedPendulum-v4", help="id of this environment")
+-    parser.add_argument('--learning-rate', type=float, default=2.5e-4, help="set learning rate for algorithm")
+-    parser.add_argument('--seed', type=int, default=1, help="seed of this experiment")
+-    parser.add_argument('--track', type=lambda x:bool(strtobool(x)), default=False, nargs="?", const="True", help="To enable WandB tracking")
+-    parser.add_argument('--wandb-project-name', type=str, default="Prototype", help="the wandb's project name")
+-    parser.add_argument('--wandb-entity', type=str, default=None, help="the entity (team) of wandb's project")
+-    parser.add_argument('--num_minibatches', type=int, default=32, help="the number of mini-batches")
+-    parser.add_argument('--num_envs', type=int, default=8, help="number of environments to activate")
+-    parser.add_argument('--total_timesteps', type=int, default=100000, help="number of global steps to execute")
+-    parser.add_argument('--batch_size', type=int, default=8, help="number of environments to activate")
+-    parser.add_argument('--num_steps', type=int, default=1600, help="the number of steps to run in each environment per policy rollout")
+-    parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
+-        help="Toggle learning rate annealing for policy and value networks")
+-
+-    args = parser.parse_args()
+-    args.batch_size = int(args.num_envs * args.num_steps)
+-    args.minibatch_size = int(args.batch_size // args.num_minibatches)
+-    return args
+-
+-
+-
+ class Policy_Network():
+ 
+     def __init__(self, obs_space_dims, action_space_dims):
+@@ -131,7 +103,6 @@ class Simulation:
+         self.value = Value_Network(self.obs_space_dim)
+         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
+ 
+-        self.log_prob_buffer = []
+         self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs))
+         self.reward_buffer = torch.zeros((args.num_steps, args.num_envs))
+         self.return_buffer = torch.zeros((args.num_steps, args.num_envs))
+@@ -165,7 +136,7 @@ class Simulation:
+ 
+     
+     def wandb_init(self):
+-        run_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
++        run_name = f"{args.gym_id}__{args.description}__{args.exp_name}__{int(time.time())}"
+         wandb.init(
+             project=args.wandb_project_name, 
+             entity=args.wandb_entity,
+@@ -239,7 +210,6 @@ class Simulation:
+                     self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env]
+                 else:
+                     self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env].clone() + lmbda*gamma*self.gae_buffer[l-i][env].clone().detach()
+-        print("Complete gae buffering")
+         return self.gae_buffer
+ 
+     def get_td_buffer(self):
+@@ -250,19 +220,29 @@ class Simulation:
+                 else:
+                     self.td_buffer[i, env] = rew + self.value_buffer[i+1, env] - self.value_buffer[i, env]
+         return self.td_buffer
++
++    def mini_batch_update(args):
++        mini_batch_indices, log_prob_buffer, gae_buffer, lock = args
++        mini_batch_log_probs = log_prob_buffer.reshape(-1)[mini_batch_indices]
++        mini_batch_gae = gae_buffer.reshape(-1)[mini_batch_indices]
++        loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
++        with lock:
++            loss_pol.backward(retain_graph=True)
+     
+     def policy_update(self):
+         n_mini_batch = args.num_minibatches
+-        total_samples = args.num_steps * args.num_envs
+-        mini_batch_size = total_samples // n_mini_batch
+-        indices = np.random.permutation(total_samples)
+-        for i in range(n_mini_batch):
+-            mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
+-            mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
+-            mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
+-            loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
+-            loss_pol.backward(retain_graph=True)
+-            old_indices = mini_batch_indices
++        batch_size = args.batch_size
++        mini_batch_size = args.minibatch_size
++        indices = np.random.permutation(batch_size)
++        for epoch in range(args.update_epochs):
++            np.random.shuffle(indices)                
++            for i in range(n_mini_batch):
++                mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
++                mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
++                mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
++                loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
++                loss_pol.backward(retain_graph=True)
++                old_indices = mini_batch_indices
+         self.pol_optimizer.step()
+         self.pol_optimizer.zero_grad()
+ 
+@@ -421,7 +401,12 @@ class Simulation:
+ if __name__ == "__main__":
+     args = parse_args()
+     sim = Simulation(args)
++    if args.track:
++        sim.wandb_init()
++        print("WandB initialization done")
+     sim.print_args_summary()
++    print("Start training")
++    print("WandB Project Name: ", args.wandb_project_name)
+     sim.train()
+     sim.save_model(path="./weights")
+ 

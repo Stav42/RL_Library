@@ -1,0 +1,34 @@
+WandB initialization done
+Arguments passed to the script:
+exp_name: 09-Oct-2023
+gym_id: InvertedPendulum-v4
+learning_rate: 0.00025
+seed: 1
+track: True
+wandb_project_name: Prototype
+wandb_entity: None
+num_minibatches: 32
+num_envs: 8
+total_timesteps: 100000
+num_steps: 1600
+update_epochs: 10
+description: Trial2
+anneal_lr: True
+batch_size: 12800
+minibatch_size: 400
+Start training
+WandB Project Name:  Prototype
+(8, 4)
+Update:  1
+Traceback (most recent call last):
+  File "/Users/stav.42/RL_Library/cartpole/ppo/tparallel.py", line 410, in <module>
+    sim.train()
+  File "/Users/stav.42/RL_Library/cartpole/ppo/tparallel.py", line 388, in train
+    self.policy_update()
+  File "/Users/stav.42/RL_Library/cartpole/ppo/tparallel.py", line 244, in policy_update
+    loss_pol.backward(retain_graph=True)
+  File "/Users/stav.42/miniconda3/envs/pytorch_rl/lib/python3.9/site-packages/torch/_tensor.py", line 487, in backward
+    torch.autograd.backward(
+  File "/Users/stav.42/miniconda3/envs/pytorch_rl/lib/python3.9/site-packages/torch/autograd/__init__.py", line 200, in backward
+    Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt

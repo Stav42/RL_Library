@@ -10,7 +10,6 @@ import torch.nn as nn
 from torch.distributions.normal import Normal
 import gymnasium as gym
 from distutils.util import strtobool
-from datetime import datetime
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from typing import Optional
 import wandb
@@ -18,6 +17,9 @@ from torch.utils.tensorboard import SummaryWriter
 from debugging import check_values_same
 from helper import parse_args
 import functools
+
+torch.autograd.set_detect_anomaly(True)
+
 
 class Policy_Network():
 
@@ -126,7 +128,7 @@ class Simulation:
 
 
     def tensorboard_init(self):
-        run_name = f"{args.gym_id}__{args.description}__{args.exp_name}__{int(time.time())}"
+        run_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
         self.writer = SummaryWriter(f"runs/{run_name}")
         self.writer.add_text(
             "Hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()]))
@@ -134,10 +136,7 @@ class Simulation:
 
     
     def wandb_init(self):
-        current_time_seconds = time.time()
-        current_datetime = datetime.fromtimestamp(current_time_seconds)
-        time_of_day = current_datetime.strftime("%H-%M")
-        run_name = f"{args.gym_id}__{args.description}__{args.exp_name}__{time_of_day}"
+        run_name = f"{args.gym_id}__{args.description}__{args.exp_name}__{int(time.time())}"
         wandb.init(
             project=args.wandb_project_name, 
             entity=args.wandb_entity,
@@ -238,7 +237,6 @@ class Simulation:
         for epoch in range(args.update_epochs):
             np.random.shuffle(indices)                
             for i in range(n_mini_batch):
-                print("Epoch|Batch: ", epoch, "|", i)
                 mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
                 mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
                 mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
@@ -351,7 +349,6 @@ class Simulation:
     def train(self, seed=1):
         
         train_time = time.time()
-        initial_time = time.time()
         global_step=0
         next_done = torch.zeros(args.num_envs)
         num_upd = args.total_timesteps // args.batch_size
@@ -365,7 +362,6 @@ class Simulation:
             update_start = time.time()
             num_steps = 0
             for step in range(0, args.num_steps):
-                print("Step: ", step)
                 global_step+=1*args.num_envs
                 action = self.sample_action(obs, step=step)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
@@ -385,14 +381,12 @@ class Simulation:
             update_dur = update_time - train_time
             train_time = time.time()
 
-            self.writer.add_scalar('timesteps across all envs', scalar_value=global_step, walltime=True, global_step=time.time()-initial_time)
             ## Update 
             self.get_return_buffer()
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
             self.policy_update()
             self.value_update()
-            print("Updated policy and critic!")
             self.log_data()
             self.flush_post_ep()
             self.old_log_prob = self.log_prob_buffer.clone()
@@ -410,7 +404,6 @@ if __name__ == "__main__":
     if args.track:
         sim.wandb_init()
         print("WandB initialization done")
-        sim.tensorboard_init()
     sim.print_args_summary()
     print("Start training")
     print("WandB Project Name: ", args.wandb_project_name)
