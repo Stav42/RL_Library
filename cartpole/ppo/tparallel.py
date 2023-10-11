@@ -6,6 +6,7 @@ import os
 import torch
 import argparse
 import time
+import pickle
 import torch.nn as nn
 from torch.distributions.normal import Normal
 import gymnasium as gym
@@ -98,9 +99,11 @@ class Simulation:
         self.action_space_dim = self.envs.action_space.shape[0]
 
         self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim)
+        self.policy.policy_net.share_memory()
         self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
 
         self.value = Value_Network(self.obs_space_dim)
+        self.value.value_net.share_memory()
         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
 
         self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs))
@@ -227,12 +230,13 @@ class Simulation:
                     self.td_buffer[i, env] = rew + self.value_buffer[i+1, env] - self.value_buffer[i, env]
         return self.td_buffer
 
-    def mini_batch_update(args):
-        mini_batch_indices, log_prob_buffer, gae_buffer, lock = args
+    def mini_batch_update(self, args):
+        mini_batch_indices, log_prob_buffer, gae_buffer = args
         mini_batch_log_probs = log_prob_buffer.reshape(-1)[mini_batch_indices]
         mini_batch_gae = gae_buffer.reshape(-1)[mini_batch_indices]
         loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
         loss_pol.backward(retain_graph=True)
+        print("Backward Done")
     
     def policy_update(self):
         n_mini_batch = args.num_minibatches
@@ -241,7 +245,7 @@ class Simulation:
         indices = np.random.permutation(batch_size)
         m = Manager()
         lock = m.Lock()
-        with Pool() as pool:
+        with Pool(processes=os.cpu_count()) as pool:
             for epoch in range(args.update_epochs):
                 np.random.shuffle(indices)  
                 tasks = []
@@ -249,8 +253,11 @@ class Simulation:
                 for i in range(n_mini_batch):
                     print("Epoch|Batch: ", epoch, "|", i)
                     mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
-                    tasks.append((mini_batch_indices, self.log_prob_buffer, self.gae_buffer, lock))
+                    tasks.append((mini_batch_indices, self.log_prob_buffer, self.gae_buffer))
+                    # self.mini_batch_update(tasks.pop())
+
                 pool.map(self.mini_batch_update, tasks)
+                # pool.close()
                 self.upd_rollout_steps+=mini_batch_size
                 self.update_time_buffer.append(time.time()-init_time)
                 self.update_steps_buffer.append(self.upd_rollout_steps)
@@ -265,8 +272,6 @@ class Simulation:
         batch_size = args.batch_size
         mini_batch_size = args.minibatch_size
         indices = np.random.permutation(batch_size)
-        m = Manager()
-        lock = m.ock()
         init_time = time.time()
         for epoch in range(args.update_epochs):
             np.random.shuffle(indices)  
