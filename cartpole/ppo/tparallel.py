@@ -227,7 +227,7 @@ class Simulation:
                 if i == self.reward_buffer.size()[0]-1:
                     self.td_buffer[i, env] = rew
                 else:
-                    self.td_buffer[i, env] = rew + self.value_buffer[i+1, env] - self.value_buffer[i, env]
+                    self.td_buffer[i, env] = rew + self.value_buffer[i+1, env].detach() - self.value_buffer[i, env].detach()
         return self.td_buffer
 
     def mini_batch_update(self, args):
