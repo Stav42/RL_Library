@@ -17,7 +17,7 @@ from typing import Optional
 import wandb
 from torch.utils.tensorboard import SummaryWriter
 from debugging import check_values_same
-from helper import parse_args
+from helper_single import parse_args
 import functools
 from multiprocessing import Pool, Manager
 
@@ -73,32 +73,19 @@ class Value_Network():
         value = self.value_net(x)
         return value
     
-def make_env(gym_id, seed, rank, capture_video=None, run_name=None):
-    def _init():
-        env = gym.make(gym_id)
-        env = gym.wrappers.RecordEpisodeStatistics(env)
-        if capture_video:
-                env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
-        env.reset(seed=seed+rank)
-        env.action_space.seed(seed)
-        env.observation_space.seed(seed)
-        return env
-    return _init
-
-
 class Simulation:
     
     def __init__(self, render=False):
 
         self.env_id = "InvertedPendulum-v4"
         self.num_cpu = 16
-        self.envs = SubprocVecEnv([make_env(args.gym_id, seed=i, rank=i) for i in range(args.num_envs)])
+        self.env = self.env = gym.make("InvertedPendulum-v4")
         self.learning_rate = 1e-4
         self.gamma = 0.99
         self.eps = 1e-6
 
-        self.obs_space_dim = self.envs.observation_space.shape[0]
-        self.action_space_dim = self.envs.action_space.shape[0]
+        self.obs_space_dim = self.env.observation_space.shape[0]
+        self.action_space_dim = self.env.action_space.shape[0]
 
         self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim)
         self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
@@ -106,14 +93,14 @@ class Simulation:
         self.value = Value_Network(self.obs_space_dim)
         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
 
-        self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.reward_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.return_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.log_prob_buffer = torch.zeros((args.num_steps, 1))
+        self.reward_buffer = torch.zeros((args.num_steps, 1))
+        self.return_buffer = torch.zeros((args.num_steps, 1))
         self.update_time_buffer = []
         self.update_steps_buffer = []
-        self.value_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.td_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.gae_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.value_buffer = torch.zeros((args.num_steps, 1))
+        self.td_buffer = torch.zeros((args.num_steps, 1))
+        self.gae_buffer = torch.zeros((args.num_steps, 1))
         self.epsilon = 0
         self.wandb_run = None
 
@@ -121,10 +108,6 @@ class Simulation:
         self.log_avg_return = []
         self.log_avg_value = []
 
-        self.upd_rollout_time = 0
-        self.upd_rollout_steps = 0
-
-        self.old_log_prob = torch.zeros((args.num_steps, args.num_envs))
         self.training_step = 0
         self.eps_run = 0
 
@@ -146,7 +129,8 @@ class Simulation:
         current_time_seconds = time.time()
         current_datetime = datetime.fromtimestamp(current_time_seconds)
         time_of_day = current_datetime.strftime("%H-%M")
-        run_name = f"{args.gym_id}__{args.description}__{args.exp_name}__{time_of_day}"
+        name = ""
+        run_name = f"{args.gym_id}__{args.description}__{name}__{time_of_day}"
         self.wandb_run = wandb.init(
             project=args.wandb_project_name, 
             entity=args.wandb_entity,
@@ -168,7 +152,7 @@ class Simulation:
         return action
     
     def save_model(self, path):
-        path = path + "/Cartpole_PPO.pth"
+        path = path + "/single_Cartpole_PPO.pth"
         torch.save(self.policy.policy_net.state_dict(), path)
 
     def save_value(self, path):
@@ -237,14 +221,6 @@ class Simulation:
                     self.td_buffer[i, env] = rew + self.value_buffer[i+1, env].detach() - self.value_buffer[i, env].detach()
         return self.td_buffer
 
-    def mini_batch_update(self, args):
-        mini_batch_indices, log_prob_buffer, gae_buffer = args
-        mini_batch_log_probs = log_prob_buffer.reshape(-1)[mini_batch_indices]
-        mini_batch_gae = gae_buffer.reshape(-1)[mini_batch_indices]
-        loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
-        loss_pol.backward(retain_graph=True)
-        print("Backward Done")
-
     def policy_update(self):
         n_mini_batch = args.num_minibatches
         batch_size = args.batch_size
@@ -260,17 +236,17 @@ class Simulation:
                 mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
                 loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
                 loss_pol.backward(retain_graph=True)
-                self.upd_rollout_steps += mini_batch_gae.shape[0]
-                self.upd_rollout_time += time.time() - init_time
-                self.update_steps_buffer.append(self.upd_rollout_steps)
-                self.update_time_buffer.append(self.upd_rollout_time)
-                self.writer.add_scalar('rollouts for pol upd vs time taken', scalar_value=self.upd_rollout_time, global_step=self.upd_rollout_steps)
+                # self.upd_rollout_steps += mini_batch_gae.shape[0]
+                # self.upd_rollout_time += time.time() - init_time
+                # self.update_steps_buffer.append(self.upd_rollout_steps)
+                # self.update_time_buffer.append(self.upd_rollout_time)
+                # self.writer.add_scalar('rollouts for pol upd vs time taken', scalar_value=self.upd_rollout_time, global_step=self.upd_rollout_steps)
         
         table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
         self.wandb_logging(table=table, title="Update (backprop) time per rollout", x_title="Update Steps", y_title="Time (s)")
-        for name, param in self.policy.policy_net.named_parameters():
-            if param.requires_grad:
-                print(name, param.grad)
+        # for name, param in self.policy.policy_net.named_parameters():
+        #     if param.requires_grad:
+        #         print(name, param.grad)
         self.pol_optimizer.step()
         self.pol_optimizer.zero_grad()
 
@@ -290,7 +266,7 @@ class Simulation:
         self.val_optimizer.zero_grad()
 
     def log_data(self):
-        mean_rew = np.array(self.reward_buffer).mean()
+        mean_rew = np.array(self.reward_buffer).sum()
         self.log_avg_reward.append(mean_rew)
         mean_ret = np.array(self.return_buffer).mean()
         self.log_avg_return.append(mean_ret)
@@ -354,21 +330,6 @@ class Simulation:
         ax[1, 2].set_ylabel("Average Value")
         plt.show()
 
-    def ppo_update(self):
-        loss_pol = 0
-        size = min(len(self.reward_buffer), len(self.old_log_prob))
-        for i in range(size):
-            logratio = self.log_prob_buffer[i] - self.old_log_prob[i].detach()
-            ratio = torch.exp(logratio)
-            tmp_loss1 = -1*self.gae_buffer[i].detach()*ratio
-            tmp_loss2 = -1*self.gae_buffer[i].detach()*torch.clamp(ratio, 1-self.clip_coeff, 1+self.clip_coeff)
-            loss_pol += torch.max(tmp_loss1, tmp_loss2).mean()
-
-        loss_pol/=len(self.reward_buffer)
-        self.pol_optimizer.zero_grad()
-        loss_pol.backward()
-        self.pol_optimizer.step()
-
     def print_args_summary(self):
         print("Arguments passed to the script:")
         for arg, value in vars(args).items():
@@ -386,7 +347,7 @@ class Simulation:
     def print_stats(self):
         print(f"Average Value: {self.value_buffer.mean()}")
         print(f"Return Value: {self.return_buffer.mean()}")
-        print(f"Reward Value: {self.reward_buffer.mean()}")
+        print(f"Reward Value: {self.reward_buffer.sum()}")
 
 
     def train(self, seed=1):
@@ -397,8 +358,7 @@ class Simulation:
 
         next_done = torch.zeros(args.num_envs)
         num_upd = args.total_timesteps // args.batch_size
-        obs = self.envs.reset()
-        print(obs.shape)
+        obs, info = self.env.reset(seed=seed)
         global_step_list = []
         global_time_list = []
         global_value_list = []
@@ -406,24 +366,28 @@ class Simulation:
 
         for update in range(1, num_upd+1):
             print("Update: ", update)
+            obs, info = self.env.reset(seed=seed)
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
             step_time = 0
             update_start = time.time()
+            done = False
             print(f"Time before sampling: {time.time()}")
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
                 action = self.sample_action(obs, step=step)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
                 val = self.value.forward(obs_tensor)
-                self.value_buffer[step, :] = torch.transpose(val, 0, 1)
-                obs, reward, done, info = self.envs.step(action)
+                self.value_buffer[step, :] = val
+                obs, reward, terminated, truncated, info = self.env.step(action)
                 self.reward_buffer[step, :] = torch.tensor(reward)
+                # print(f"Step {step} Reward {reward} Action {action} Truncated {truncated} Terminated {terminated}")
                 step_dur = time.time()-update_start
                 step_time+=step_dur
-                print(f"Done: {done}")
-                if done.any() == True:
+                done = terminated or truncated
+                if done:
                     print("Episode Terminated")
                     break
+            print(f"Rewards: {self.reward_buffer.sum()}")
             new_time = time.time()
             difference = new_time-update_start
             global_time+=difference
@@ -460,12 +424,12 @@ class Simulation:
             self.flush_post_ep()
             self.old_log_prob = self.log_prob_buffer.clone()
 
-            if (update) % 10 == 0:
+            if (update) % 100 == 0:
                 avg_reward = self.log_avg_reward[-1]
                 print("update:", update, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1])
 
-            if (update) % 10 == 0 and self.plot:
-                # self.plot_training()
+            if (update) % 1000 == 0 and self.plot:
+                self.plot_training()
                 continue
             
 if __name__ == "__main__":
