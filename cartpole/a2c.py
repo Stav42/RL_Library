@@ -234,7 +234,6 @@ class Simulation:
         if val:
             self.value.value_net.load_state_dict(torch.load(val))
 
-
     def plot_training(self):
         fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True)
         X = range(self.eps_run)
@@ -261,6 +260,16 @@ class Simulation:
         ax[1, 1].set_ylabel("Time (s)")
         ax[1, 2].set_ylabel("Average Value")
         plt.show()
+    
+    def test_functions(self):
+        for i in range(10):
+            self.return_buffer.append(1)
+        self.get_return_buffer()
+        self.get_td_buffer()
+        self.get_gae_buffer()
+        print("Return buffer: ", self.return_buffer)
+        print("TD Buffer: ", self.td_buffer)
+        print("GAE Buffer: ", self.gae_buffer)
 
     def train(self, num_eps, seed=1):
         
@@ -320,10 +329,11 @@ sim = Simulation()
 pol = "/Users/stav.42/RL_Library/cartpole/weights/A2C.pth"
 # sim.load_weights(pol=pol)
 print("Simulation instantiated")
+sim.test_functions()
 
 for seed in range(8):
-    sim.train(num_eps=3000, seed=seed)
-    sim.plot_training()
+    # sim.train(num_eps=3000, seed=seed)
+    # sim.plot_training()
     # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
     # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
     # sim.flush_post_iter()

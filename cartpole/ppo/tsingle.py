@@ -349,7 +349,15 @@ class Simulation:
         print(f"Return Value: {self.return_buffer.mean()}")
         print(f"Reward Value: {self.reward_buffer.sum()}")
 
-
+    def test_functions(self):
+        self.return_buffer[:10, :] = 1
+        self.get_return_buffer()
+        self.get_td_buffer()
+        self.get_gae_buffer(lmbda=0.99)
+        print("Return buffer: ", self.return_buffer)
+        print("TD Buffer: ", self.td_buffer)
+        print("GAE Buffer: ", self.gae_buffer)
+        
     def train(self, seed=1):
         
         train_time = time.time()
@@ -442,8 +450,9 @@ if __name__ == "__main__":
     sim.print_args_summary()
     print("Start training")
     print("WandB Project Name: ", args.wandb_project_name)
-    sim.train()
-    sim.save_model(path="./weights")
-    print("Weights Saved!")
-    sim.wandb_run.finish()
+    # sim.train()
+    # sim.save_model(path="./weights")
+    # print("Weights Saved!")
+    sim.test_functions()
+    # sim.wandb_run.finish()
 
