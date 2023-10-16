@@ -216,9 +216,9 @@ class Simulation:
         for env in range(self.reward_buffer.size()[1]):   
             for i, rew in enumerate(self.reward_buffer[:, env]):
                 if i == self.reward_buffer.size()[0]-1:
-                    self.td_buffer[i, env] = rew
+                    self.td_buffer[i, env] = rew - self.value_buffer[i, env].detach()
                 else:
-                    self.td_buffer[i, env] = rew + self.value_buffer[i+1, env].detach() - self.value_buffer[i, env].detach()
+                    self.td_buffer[i, env] = rew + self.gamma*self.value_buffer[i+1, env].detach() - self.value_buffer[i, env].detach()
         return self.td_buffer
 
     def policy_update(self):
@@ -234,7 +234,7 @@ class Simulation:
                 mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
                 mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
                 mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
-                loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
+                loss_pol = -torch.sum(mini_batch_log_probs * mini_batch_gae)
                 loss_pol.backward(retain_graph=True)
                 # self.upd_rollout_steps += mini_batch_gae.shape[0]
                 # self.upd_rollout_time += time.time() - init_time
@@ -250,6 +250,13 @@ class Simulation:
         self.pol_optimizer.step()
         self.pol_optimizer.zero_grad()
 
+    def policy_update_single(self):
+        loss_pol = -torch.sum(self.log_prob_buffer.reshape(-1) * self.gae_buffer.reshape(-1))
+        loss_pol.backward(retain_graph=True)
+        table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
+        self.pol_optimizer.step()
+        self.pol_optimizer.zero_grad()
+
     def value_update(self):
         n_mini_batch = args.num_minibatches
         total_samples = args.num_steps * args.num_envs
@@ -262,6 +269,15 @@ class Simulation:
             loss_val =  (mini_return - mini_value)**2
             loss = torch.sum(loss_val)
             loss.backward(retain_graph=True)
+        self.val_optimizer.step()
+        self.val_optimizer.zero_grad()
+
+    def value_update_single(self):
+        mini_return = self.return_buffer.reshape(-1)
+        mini_value = self.value_buffer.reshape(-1)
+        loss_val =  (mini_return - mini_value)**2
+        loss = torch.sum(loss_val)
+        loss.backward(retain_graph=True)
         self.val_optimizer.step()
         self.val_optimizer.zero_grad()
 
@@ -358,7 +374,7 @@ class Simulation:
         self.get_return_buffer()
         self.get_td_buffer()
         self.get_gae_buffer(lmbda=0.99)
-        loss_pol = -torch.mean(self.log_prob_buffer * self.gae_buffer)
+        loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer)
         print("Return buffer: ", self.return_buffer.transpose(0, 1))
         print("TD Buffer: ", self.td_buffer.transpose(0, 1))
         print("GAE Buffer: ", self.gae_buffer.transpose(0, 1))
@@ -386,7 +402,7 @@ class Simulation:
             step_time = 0
             update_start = time.time()
             done = False
-            print(f"Time before sampling: {time.time()}")
+            # print(f"Time before sampling: {time.time()}")
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
                 action = self.sample_action(obs, step=step)
@@ -400,9 +416,9 @@ class Simulation:
                 step_time+=step_dur
                 done = terminated or truncated
                 if done:
-                    print("Episode Terminated")
+                    # print("Episode Terminated")
                     break
-            print(f"Rewards: {self.reward_buffer.sum()}")
+            # print(f"Rewards: {self.reward_buffer.sum()}")
             new_time = time.time()
             difference = new_time-update_start
             global_time+=difference
@@ -431,10 +447,10 @@ class Simulation:
             self.get_return_buffer()
             self.get_td_buffer()
             self.get_gae_buffer(lmbda=0.99)
-            self.policy_update()
-            self.value_update()
-            self.print_stats()
-            print("Updated policy and critic!")
+            self.policy_update_single()
+            self.value_update_single()
+            # self.print_stats()
+            # print("Updated policy and critic!")
             self.log_data()
             self.flush_post_ep()
             self.old_log_prob = self.log_prob_buffer.clone()
@@ -457,9 +473,9 @@ if __name__ == "__main__":
     sim.print_args_summary()
     print("Start training")
     print("WandB Project Name: ", args.wandb_project_name)
-    # sim.train()
-    # sim.save_model(path="./weights")
+    sim.train()
+    sim.save_model(path="./weights")
     # print("Weights Saved!")
-    sim.test_functions()
-    # sim.wandb_run.finish()
+    # sim.test_functions()
+    sim.wandb_run.finish()
 

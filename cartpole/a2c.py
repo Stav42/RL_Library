@@ -205,10 +205,11 @@ class Simulation:
         env_td = []         
         for i, rew in enumerate(rewards):
             if i == rewards.shape[0]-1:
-                self.td_buffer.append(rew-values[i][0])
+                # self.td_buffer.append(rew-values[i][0])
+                self.td_buffer.append(rew-values[i])
             else:
-                self.td_buffer.append(rew+self.gamma*values[i+1][0]-values[i][0])
-                # self.td_buffer.append(rew+self.gamma*values[i+1]-values[i])
+                # self.td_buffer.append(rew+self.gamma*values[i+1][0]-values[i][0])
+                self.td_buffer.append(rew+self.gamma*values[i+1]-values[i])
         return self.td_buffer    
     
     def get_gae_buffer(self, lmbda):
@@ -331,13 +332,13 @@ sim = Simulation()
 pol = "/Users/stav.42/RL_Library/cartpole/weights/A2C.pth"
 # sim.load_weights(pol=pol)
 print("Simulation instantiated")
-# sim.test_functions()
+sim.test_functions()
 
-for seed in range(8):
-    sim.train(num_eps=3000, seed=seed)
-    sim.plot_training()
-    sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-    sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+# for seed in range(8):
+#     sim.train(num_eps=3000, seed=seed)
+#     sim.plot_training()
+#     sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+#     sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
     # sim.flush_post_iter()
 # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
 # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
