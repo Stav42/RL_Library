@@ -153,7 +153,7 @@ class Simulation:
         loss_pol = 0
         log_prob = self.log_prob_buffer
         for i in range(len(self.reward_buffer)):
-            loss_pol+=self.log_prob_buffer[i]*(self.gae_buffer[i].detach())
+            loss_pol+=self.log_prob_buffer[i]*self.gae_buffer[i]
         loss_pol*=-1
         self.pol_optimizer.zero_grad()
         loss_pol.backward()
@@ -198,34 +198,28 @@ class Simulation:
         return Y_mva
     
     def get_td_buffer(self):
-        values = np.array(self.value_buffer)
+        with torch.no_grad():
+            values = np.array(self.value_buffer)
         rewards = np.array(self.reward_buffer)
         self.td_buffer = []
-        for env in range(rewards.shape[1]):   
-            env_td = []         
-            for i, rew in enumerate(rewards[:, env]):
-                print("i is: ", i)
-                if i == rewards.shape[0]-1:
-                    env_td.append(rew)
-                else:
-                    env_td.append(rew+values[i+1, env]-values[i, env])
-            self.td_buffer.append(env_td)
-        return self.td_buffer
+        env_td = []         
+        for i, rew in enumerate(rewards):
+            if i == rewards.shape[0]-1:
+                self.td_buffer.append(rew-values[i][0])
+            else:
+                self.td_buffer.append(rew+self.gamma*values[i+1][0]-values[i][0])
+                # self.td_buffer.append(rew+self.gamma*values[i+1]-values[i])
+        return self.td_buffer    
     
     def get_gae_buffer(self, lmbda):
-        gae = 0
+        gamma = self.gamma
         l = len(self.td_buffer)
-        for i in range(len(self.td_buffer)):
+        self.gae_buffer = [0]*l
+        for i in range(l):
             if i == 0:
-                gae += self.td_buffer[l-i-1]
-                self.gae_buffer.append(gae)
-                continue
-            gae = self.td_buffer[l-i-1] + self.gamma*lmbda*gae.detach()
-            self.gae_buffer.append(gae)
-        gae_buffer = [0]*l
-        for i, gae in enumerate(self.gae_buffer):
-            gae_buffer[l-i-1] = gae
-        self.gae_buffer = gae_buffer
+                self.gae_buffer[l-i-1] = self.td_buffer[l-i-1]
+            else:
+                self.gae_buffer[l-i-1] = self.td_buffer[l-i-1] + lmbda*gamma*self.gae_buffer[l-i]
         return self.gae_buffer
     
     def load_weights(self, pol=None, val=None):
@@ -261,15 +255,23 @@ class Simulation:
         ax[1, 2].set_ylabel("Average Value")
         plt.show()
     
+
     def test_functions(self):
         for i in range(10):
-            self.return_buffer.append(1)
+            self.reward_buffer.append(1)
+            self.value_buffer.append(i)
+            self.log_prob_buffer.append(2*i)
         self.get_return_buffer()
         self.get_td_buffer()
-        self.get_gae_buffer()
+        self.get_gae_buffer(lmbda=0.99)
+        loss_pol = 0
+        for i in range(len(self.reward_buffer)):
+            loss_pol+=self.log_prob_buffer[i]*(self.gae_buffer[i])
+        loss_pol*=-1
         print("Return buffer: ", self.return_buffer)
         print("TD Buffer: ", self.td_buffer)
         print("GAE Buffer: ", self.gae_buffer)
+        print("Loss calculated: ", loss_pol)
 
     def train(self, num_eps, seed=1):
         
@@ -329,13 +331,13 @@ sim = Simulation()
 pol = "/Users/stav.42/RL_Library/cartpole/weights/A2C.pth"
 # sim.load_weights(pol=pol)
 print("Simulation instantiated")
-sim.test_functions()
+# sim.test_functions()
 
 for seed in range(8):
-    # sim.train(num_eps=3000, seed=seed)
-    # sim.plot_training()
-    # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-    # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+    sim.train(num_eps=3000, seed=seed)
+    sim.plot_training()
+    sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+    sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
     # sim.flush_post_iter()
 # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
 # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")

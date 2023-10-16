@@ -350,13 +350,20 @@ class Simulation:
         print(f"Reward Value: {self.reward_buffer.sum()}")
 
     def test_functions(self):
-        self.return_buffer[:10, :] = 1
+        self.reward_buffer[:10, :] = 1
+        print("Reward Buffer: ", self.reward_buffer.transpose(0, 1))
+        for i in range(10):
+            self.value_buffer[i, :] = i
+            self.log_prob_buffer[i, :] = 2*i
         self.get_return_buffer()
         self.get_td_buffer()
         self.get_gae_buffer(lmbda=0.99)
-        print("Return buffer: ", self.return_buffer)
-        print("TD Buffer: ", self.td_buffer)
-        print("GAE Buffer: ", self.gae_buffer)
+        loss_pol = -torch.mean(self.log_prob_buffer * self.gae_buffer)
+        print("Return buffer: ", self.return_buffer.transpose(0, 1))
+        print("TD Buffer: ", self.td_buffer.transpose(0, 1))
+        print("GAE Buffer: ", self.gae_buffer.transpose(0, 1))
+        print("Loss calculated: ", loss_pol)
+
         
     def train(self, seed=1):
         

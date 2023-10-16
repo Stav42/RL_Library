@@ -189,6 +189,19 @@ class Simulation:
 
         return Y_mva
     
+    def get_td_buffer_corrected(self):
+        values = np.array(self.value_buffer)
+        rewards = np.array(self.reward_buffer)
+        self.td_buffer = []
+        env_td = []         
+        for i, rew in enumerate(rewards):
+            # print("i is: ", i)
+            if i == rewards.shape[0]-1:
+                self.td_buffer.append(rew)
+            else:
+                self.td_buffer.append(rew+values[i+1]-values[i])
+        return self.td_buffer    
+
     def get_td_buffer(self):
         rewards = np.flip(np.array(self.reward_buffer))
         for i, rew in enumerate(rewards):
@@ -203,15 +216,28 @@ class Simulation:
         self.td_buffer = td_buffer
         return self.td_buffer
     
+    def get_gae_buffer_corrected(self, lmbda):
+        gamma = self.gamma
+        l = len(self.td_buffer)
+        self.gae_buffer = [0]*l
+        for i in range(l):
+            if i == 0:
+                self.gae_buffer[l-i-1] = self.td_buffer[l-i-1]
+            else:
+                self.gae_buffer[l-i-1] = self.td_buffer[l-i-1] + lmbda*gamma*self.gae_buffer[l-i]
+        return self.gae_buffer
+    
     def get_gae_buffer(self, lmbda):
         gae = 0
         l = len(self.td_buffer)
         for i in range(len(self.td_buffer)):
             if i == 0:
+                print(self.td_buffer[l-i-1])
                 gae += self.td_buffer[l-i-1]
                 self.gae_buffer.append(gae)
                 continue
-            gae = self.td_buffer[l-i-1] + self.gamma*lmbda*gae.detach()
+            # gae = self.td_buffer[l-i-1] + self.gamma*lmbda*gae.detach()
+            gae = self.td_buffer[l-i-1] + self.gamma*lmbda*gae
             self.gae_buffer.append(gae)
         gae_buffer = [0]*l
         for i, gae in enumerate(self.gae_buffer):
@@ -245,6 +271,23 @@ class Simulation:
         ax[1, 1].set_ylabel("Time (s)")
         ax[1, 2].set_ylabel("Average Value")
         plt.show()
+
+    def test_functions(self):
+        for i in range(10):
+            self.reward_buffer.append(1)
+            self.value_buffer.append(i)
+            self.log_prob_buffer.append(2*i)
+        self.get_return_buffer()
+        self.get_td_buffer_corrected()
+        self.get_gae_buffer_corrected(lmbda=0.99)
+        loss_pol = 0
+        for i in range(len(self.reward_buffer)):
+            loss_pol+=self.log_prob_buffer[i]*(self.gae_buffer[i])
+        loss_pol*=-1
+        print("Return buffer: ", self.return_buffer)
+        print("TD Buffer: ", self.td_buffer)
+        print("GAE Buffer: ", self.gae_buffer)
+        print("Loss calculated: ", loss_pol)
 
     def train(self, num_eps, seed=1):
         
@@ -298,3 +341,18 @@ class Simulation:
             if (episode+1) % 1000 == 0 and self.plot:
                 self.plot_training()
             
+
+if __name__ == "__main__":
+    sim = Simulation()
+    pol = "/Users/stav.42/RL_Library/cartpole/weights/A2C.pth"
+    print("Simulation instantiated")
+    sim.test_functions()
+
+    # for seed in range(8):
+    #     sim.train(num_eps=3000, seed=seed)
+    #     sim.plot_training()
+    #     # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+    #     # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+    #     sim.flush_post_iter()
+    # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+    # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
