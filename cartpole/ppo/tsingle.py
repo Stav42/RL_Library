@@ -95,6 +95,7 @@ class Simulation:
 
         self.log_prob_buffer = torch.zeros((args.num_steps, 1))
         self.reward_buffer = torch.zeros((args.num_steps, 1))
+        self.steps = 0
         self.return_buffer = torch.zeros((args.num_steps, 1))
         self.update_time_buffer = []
         self.update_steps_buffer = []
@@ -190,15 +191,22 @@ class Simulation:
         return tmp_list
 
     def get_return_buffer(self):
+        time3 = time.time()
         rewards = torch.flip(self.reward_buffer, [0])
+        gamma = self.gamma
+        print(f"        Flipping: ", time.time()-time3)
+        time3 = time.time()
         for env in range(rewards.size()[1]):
-            gamma = self.gamma
-            for i, reward in enumerate(rewards[:, env]):
+            for i, reward in enumerate(rewards[-self.steps:, env]):
+                print(f"i: {i}")
                 if i == 0:
                     self.return_buffer[i, env] = reward
                 else:
                     self.return_buffer[i, env] = reward + self.return_buffer[i-1, env]*gamma
+        print(f"        Calculating return: ", time.time()-time3)
+        time3 = time.time()
         self.return_buffer = torch.flip(self.return_buffer, [0])
+        print(f"        Flipping return: ", time.time()-time3)
         return self.return_buffer
     
     def get_gae_buffer(self, lmbda):
@@ -284,7 +292,7 @@ class Simulation:
     def log_data(self):
         mean_rew = np.array(self.reward_buffer).sum()
         self.log_avg_reward.append(mean_rew)
-        mean_ret = np.array(self.return_buffer).mean()
+        mean_ret = np.array(self.return_buffer).sum()
         self.log_avg_return.append(mean_ret)
         val_buffer = self.value_buffer
         for i, val in enumerate(range(len(val_buffer))):
@@ -366,6 +374,7 @@ class Simulation:
         print(f"Reward Value: {self.reward_buffer.sum()}")
 
     def test_functions(self):
+        sim.steps=10
         self.reward_buffer[:10, :] = 1
         print("Reward Buffer: ", self.reward_buffer.transpose(0, 1))
         for i in range(10):
@@ -396,15 +405,19 @@ class Simulation:
         global_return_list = []
 
         for update in range(1, num_upd+1):
-            print("Update: ", update)
+            # print("Update: ", update)
+            init_time = time.time()
             obs, info = self.env.reset(seed=seed)
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
             step_time = 0
             update_start = time.time()
             done = False
+            self.steps = 0
+            print(f"Checkpoint 1: {time.time()-init_time}")
             # print(f"Time before sampling: {time.time()}")
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
+                self.steps+=1
                 action = self.sample_action(obs, step=step)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
                 val = self.value.forward(obs_tensor)
@@ -419,40 +432,54 @@ class Simulation:
                     # print("Episode Terminated")
                     break
             # print(f"Rewards: {self.reward_buffer.sum()}")
+            print(f"Checkpoint 2 Rollout: {time.time()-update_start}. Steps taken: {args.num_steps}")
             new_time = time.time()
-            difference = new_time-update_start
-            global_time+=difference
-            global_step_list.append(global_step)
-            global_time_list.append(global_time)
-            global_value_list.append(self.value_buffer.mean())
-            global_return_list.append(self.return_buffer.mean())
-            table = [[x, y/x] for (x, y) in zip(global_step_list, global_time_list)]
-            self.wandb_logging(title="Sampling Rollout Time per step", table=table, x_title="Steps", y_title="Time Per Rollout")
-            table = [[x, y] for (x, y) in zip(global_step_list, global_value_list)]
-            self.wandb_logging(title="Average value", table=table, x_title="Steps", y_title="Average Value")
-            table = [[x, y] for (x, y) in zip(global_step_list, global_return_list)]
-            self.wandb_logging(title="Average returns", table=table, x_title="Steps", y_title="Average Returns")
+            # difference = new_time-update_start
+            # # print(f"Time this episode took: {difference}. Steps taken: {args.num_steps}")
+            # global_time+=difference
+            # global_step_list.append(global_step)
+            # global_time_list.append(global_time)
+            # global_value_list.append(self.value_buffer.mean())
+            # global_return_list.append(self.return_buffer.mean())
 
-            self.writer.add_scalar('Average Value post rollouts amongst envs', scalar_value=self.value_buffer.mean(), global_step=global_step)
-            self.writer.add_scalar('Average Returns post rollout amongst envs', scalar_value=self.reward_buffer.mean(), global_step=global_step)
+            # table = [[x, y/x] for (x, y) in zip(global_step_list, global_time_list)]
+            # self.wandb_logging(title="Sampling Rollout Time per step", table=table, x_title="Steps", y_title="Time Per Rollout")
+            # table = [[x, y] for (x, y) in zip(global_step_list, global_value_list)]
+            # self.wandb_logging(title="Average value", table=table, x_title="Steps", y_title="Average Value")
+            # table = [[x, y] for (x, y) in zip(global_step_list, global_return_list)]
+            # self.wandb_logging(title="Average returns", table=table, x_title="Steps", y_title="Average Returns")
 
-            self.update_steps_buffer.append(global_step)
-            self.update_time_buffer.append(step_time)
-            step_time/=global_step
-            self.eps_run+=1
-            update_time = time.time()
-            train_time = time.time()
+            # self.writer.add_scalar('Average Value post rollouts amongst envs', scalar_value=self.value_buffer.mean(), global_step=global_step)
+            # self.writer.add_scalar('Average Returns post rollout amongst envs', scalar_value=self.reward_buffer.mean(), global_step=global_step)
+
+            # print(f"Time that logging on wandb took: ", time.time()-logging_time)
+
+            # self.update_steps_buffer.append(global_step)
+            # self.update_time_buffer.append(step_time)
+            # step_time/=global_step
+            # self.eps_run+=1
+            # update_time = time.time()
+            # train_time = time.time()
 
             ## Update 
             self.get_return_buffer()
+            print(f"Checkpoint 3a (Return Buffer): {time.time()-new_time}")
+            sub_time = time.time()
             self.get_td_buffer()
+            print(f"Checkpoint 3b (TD Buffer): {time.time()-sub_time}")
+            sub_time = time.time()
             self.get_gae_buffer(lmbda=0.99)
+            print(f"Checkpoint 3c (GAE Buffer): {time.time()-sub_time}")
+            print(f"Checkpoint 3 (Buffers): {time.time()-new_time}")
+            time2 = time.time()
             self.policy_update_single()
             self.value_update_single()
-            # self.print_stats()
-            # print("Updated policy and critic!")
             self.log_data()
             self.flush_post_ep()
+
+            print(f"Checkpoint 4 (Updates): {time.time()-time2}")
+
+            # print(f"Time the policy+value update took: {time.time()-before_update}")
             self.old_log_prob = self.log_prob_buffer.clone()
 
             if (update) % 100 == 0:
@@ -462,7 +489,8 @@ class Simulation:
             if (update) % 1000 == 0 and self.plot:
                 self.plot_training()
                 continue
-            
+            print(f"Total time taken per episode: {time.time()-update_start}")
+
 if __name__ == "__main__":
     args = parse_args()
     sim = Simulation(args)
@@ -470,12 +498,12 @@ if __name__ == "__main__":
         sim.wandb_init()
         print("WandB initialization done")
         sim.tensorboard_init()
-    sim.print_args_summary()
-    print("Start training")
-    print("WandB Project Name: ", args.wandb_project_name)
-    sim.train()
-    sim.save_model(path="./weights")
+    # sim.print_args_summary()
+    # print("Start training")
+    # print("WandB Project Name: ", args.wandb_project_name)
+    # sim.train()
+    # sim.save_model(path="./weights")
     # print("Weights Saved!")
-    # sim.test_functions()
+    sim.test_functions()
     sim.wandb_run.finish()
 

@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument('--wandb_entity', type=str, default=None, help="the entity (team) of wandb's project")
     parser.add_argument('--num_minibatches', type=int, default=32, help="the number of mini-batches")
     parser.add_argument('--num_envs', type=int, default=1, help="number of environments to activate")
-    parser.add_argument('--total_timesteps', type=int, default=100000, help="number of global steps to execute")
+    parser.add_argument('--total_timesteps', type=int, default=1000000, help="number of global steps to execute")
     parser.add_argument('--num_steps', type=int, default=800, help="the number of steps to run in each environment per policy rollout")
     parser.add_argument('--update-epochs', type=int, default=1, help="the K epochs to update the policy")
     parser.add_argument('--description', type=str, required=True, help="One-word-description for experiment name")

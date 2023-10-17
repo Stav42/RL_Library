@@ -136,17 +136,23 @@ class Simulation:
         return tmp_list
 
     def get_return_buffer(self):
+        time3 = time.time()
         rew = np.array(self.reward_buffer)
         rewards = np.flip(rew)
         gamma = self.gamma
         returns = []
+        print(f"        Flip + Preparation: {time.time()-time3}")
+        time3 = time.time()
         for i, reward in enumerate(rewards):
             if i == 0:
                 returns.append(reward)
             else:
                 returns.append(reward+gamma*returns[i-1])
+        print(f"        Calculation Time: {time.time()-time3}")
+        time3 = time.time()
         returns = self.flip_list(returns)
         self.return_buffer = list(returns)
+        print(f"        Flip Time: {time.time()-time3}")
         return self.return_buffer
     
     def policy_update(self):
@@ -205,11 +211,11 @@ class Simulation:
         env_td = []         
         for i, rew in enumerate(rewards):
             if i == rewards.shape[0]-1:
-                # self.td_buffer.append(rew-values[i][0])
-                self.td_buffer.append(rew-values[i])
+                self.td_buffer.append(rew-values[i][0])
+                # self.td_buffer.append(rew-values[i])
             else:
-                # self.td_buffer.append(rew+self.gamma*values[i+1][0]-values[i][0])
-                self.td_buffer.append(rew+self.gamma*values[i+1]-values[i])
+                self.td_buffer.append(rew+self.gamma*values[i+1][0]-values[i][0])
+                # self.td_buffer.append(rew+self.gamma*values[i+1]-values[i])
         return self.td_buffer    
     
     def get_gae_buffer(self, lmbda):
@@ -279,6 +285,7 @@ class Simulation:
         train_time = time.time()
 
         for episode in range(num_eps):
+            init_time = time.time()
             obs, info = self.env.reset(seed=seed)
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
             self.value_buffer.append(self.value.forward(obs_tensor))
@@ -286,6 +293,8 @@ class Simulation:
             step_time = 0
             episode_start = time.time()
             num_steps = 0
+            episode_new = time.time()
+            print(f"Checkpoint 1: {time.time()-init_time}")
             while not done:
                 self.training_step += 1
                 num_steps+=1
@@ -301,6 +310,8 @@ class Simulation:
                 step_time+=step_dur
 
                 done = terminated or truncated
+            print(f"Checkpoint 2 Rollout: {episode_new - time.time()}. Steps taken: {num_steps}")
+            time2 = time.time() 
             self.episode_steps_buffer.append(num_steps)
             step_time/=self.training_step
             self.eps_run+=1
@@ -312,12 +323,21 @@ class Simulation:
 
             ## Update 
             self.get_return_buffer()
+            print(f"Checkpoint 3a (Return Buffer): {time.time()-time2}")
+            sub_time = time.time()
             self.get_td_buffer()
+            print(f"Checkpoint 3b (TD Buffer): {time.time()-sub_time}")
+            sub_time = time.time()
             self.get_gae_buffer(lmbda=0.99)
+            print(f"Checkpoint 3c (GAE Buffer): {time.time()-sub_time}")
+            print(f"Checkpoint 3 (Buffers): {time.time()-time2}")
+            time2 = time.time()
             self.policy_update()
             self.value_update()
             self.log_data()
             self.flush_post_ep()
+
+            print(f"Checkpoint 4 (Updates): {time.time()-time2}")
 
             if (episode+1) % 100 == 0:
                 avg_reward = self.log_avg_reward[-1]
@@ -326,19 +346,17 @@ class Simulation:
             if (episode+1) % 1000 == 0 and self.plot:
                 self.plot_training()
             
-
-
 sim = Simulation()
 pol = "/Users/stav.42/RL_Library/cartpole/weights/A2C.pth"
 # sim.load_weights(pol=pol)
 print("Simulation instantiated")
-sim.test_functions()
+# sim.test_functions()
 
-# for seed in range(8):
-#     sim.train(num_eps=3000, seed=seed)
-#     sim.plot_training()
-#     sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-#     sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+for seed in range(8):
+    sim.train(num_eps=3000, seed=seed)
+    sim.plot_training()
+    sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+    sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
     # sim.flush_post_iter()
 # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
 # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
