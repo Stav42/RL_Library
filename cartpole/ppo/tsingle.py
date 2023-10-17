@@ -104,6 +104,7 @@ class Simulation:
         self.gae_buffer = torch.zeros((args.num_steps, 1))
         self.epsilon = 0
         self.wandb_run = None
+        self.global_eps = 0
 
         self.log_avg_reward = []
         self.log_avg_return = []
@@ -192,27 +193,28 @@ class Simulation:
 
     def get_return_buffer(self):
         time3 = time.time()
-        rewards = torch.flip(self.reward_buffer, [0])
+        # rewards = torch.flip(self.reward_buffer, [0])
         gamma = self.gamma
-        print(f"        Flipping: ", time.time()-time3)
+        assert self.steps != 0, "0 time steps"
+        # print(f"        Flipping: ", time.time()-time3)
         time3 = time.time()
-        for env in range(rewards.size()[1]):
-            for i, reward in enumerate(rewards[-self.steps:, env]):
-                print(f"i: {i}")
+        for env in range(self.reward_buffer.size()[1]):
+            for i, reward in enumerate(torch.flip(self.reward_buffer[:self.steps, env], [0])):
+                # print(f"i: {i} and reward is {reward}")
                 if i == 0:
-                    self.return_buffer[i, env] = reward
+                    self.return_buffer[self.steps-i-1, env] = reward
                 else:
-                    self.return_buffer[i, env] = reward + self.return_buffer[i-1, env]*gamma
-        print(f"        Calculating return: ", time.time()-time3)
-        time3 = time.time()
-        self.return_buffer = torch.flip(self.return_buffer, [0])
-        print(f"        Flipping return: ", time.time()-time3)
+                    self.return_buffer[self.steps-i-1, env] = reward + self.return_buffer[self.steps-i, env]*gamma
+        # print(f"        Calculating return: ", time.time()-time3)
+        # time3 = time.time()
+        # self.return_buffer = torch.flip(self.return_buffer, [0])
+        # print(f"        Flipping return: ", time.time()-time3)
         return self.return_buffer
     
     def get_gae_buffer(self, lmbda):
         gamma = self.gamma
         for env in range(self.td_buffer.size()[1]):
-            l = self.td_buffer.size()[0]
+            l = self.steps
             for i in range(l):
                 if i == 0:
                     self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env]
@@ -222,7 +224,7 @@ class Simulation:
 
     def get_td_buffer(self):
         for env in range(self.reward_buffer.size()[1]):   
-            for i, rew in enumerate(self.reward_buffer[:, env]):
+            for i, rew in enumerate(self.reward_buffer[:self.steps, env]):
                 if i == self.reward_buffer.size()[0]-1:
                     self.td_buffer[i, env] = rew - self.value_buffer[i, env].detach()
                 else:
@@ -261,7 +263,7 @@ class Simulation:
     def policy_update_single(self):
         loss_pol = -torch.sum(self.log_prob_buffer.reshape(-1) * self.gae_buffer.reshape(-1))
         loss_pol.backward(retain_graph=True)
-        table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
+        # table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
         self.pol_optimizer.step()
         self.pol_optimizer.zero_grad()
 
@@ -329,7 +331,7 @@ class Simulation:
 
     def plot_training(self):
         fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True)
-        X = range(self.eps_run)
+        X = range(self.global_eps)
         Y = self.log_avg_return
         Y = self.moving_average(Y, n=50)
         ax[0, 0].plot(X, Y)
@@ -338,20 +340,20 @@ class Simulation:
         ax[0, 1].plot(X, Y)
         Y = self.update_steps_buffer
         Y = self.moving_average(Y, n=50)
-        ax[0, 2].plot(X, Y)
-        Y = np.cumsum(np.array(self.update_steps_buffer))
-        ax[1, 0].plot(X, Y)
-        Y = np.cumsum(np.array(self.update_time_buffer))
-        ax[1, 1].plot(X, Y)        
-        Y = self.log_avg_value
-        ax[1, 2].plot(X, Y)        
+        # ax[0, 2].plot(X, Y)
+        # Y = np.cumsum(np.array(self.update_steps_buffer))
+        # ax[1, 0].plot(X, Y)
+        # Y = np.cumsum(np.array(self.update_time_buffer))
+        # ax[1, 1].plot(X, Y)        
+        # Y = self.log_avg_value
+        # ax[1, 2].plot(X, Y)        
         ax[0, 0].set_ylabel('Returns')
         ax[0, 0].set_ylim(bottom=0)
         ax[0, 1].set_ylabel('Rewards')
-        ax[0, 2].set_ylabel("update Length")
-        ax[1, 0].set_ylabel("# Steps")
-        ax[1, 1].set_ylabel("Time (s)")
-        ax[1, 2].set_ylabel("Average Value")
+        # ax[0, 2].set_ylabel("update Length")
+        # ax[1, 0].set_ylabel("# Steps")
+        # ax[1, 1].set_ylabel("Time (s)")
+        # ax[1, 2].set_ylabel("Average Value")
         plt.show()
 
     def print_args_summary(self):
@@ -380,13 +382,23 @@ class Simulation:
         for i in range(10):
             self.value_buffer[i, :] = i
             self.log_prob_buffer[i, :] = 2*i
+        self.reward_buffer[:3, :] = 22
+        time1 = time.time()
         self.get_return_buffer()
+        return_time = time.time()-time1
+        time2 = time.time()
         self.get_td_buffer()
+        td_time = time.time()-time2
+        time3 = time.time()
         self.get_gae_buffer(lmbda=0.99)
+        gae_time = time.time()-time3
         loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer)
         print("Return buffer: ", self.return_buffer.transpose(0, 1))
+        print(f"Return Calculation Time: {return_time}")
         print("TD Buffer: ", self.td_buffer.transpose(0, 1))
+        print(f"TD Buffer Calculation Time: {td_time}")
         print("GAE Buffer: ", self.gae_buffer.transpose(0, 1))
+        print(f"GAE Buffer Calculation Time: {gae_time}")
         print("Loss calculated: ", loss_pol)
 
         
@@ -394,6 +406,7 @@ class Simulation:
         
         train_time = time.time()
         global_step=0
+        self.global_eps = 0
         global_time=0
 
         next_done = torch.zeros(args.num_envs)
@@ -413,7 +426,8 @@ class Simulation:
             update_start = time.time()
             done = False
             self.steps = 0
-            print(f"Checkpoint 1: {time.time()-init_time}")
+            self.global_eps+=1
+            # print(f"Checkpoint 1: {time.time()-init_time}")
             # print(f"Time before sampling: {time.time()}")
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
@@ -432,7 +446,7 @@ class Simulation:
                     # print("Episode Terminated")
                     break
             # print(f"Rewards: {self.reward_buffer.sum()}")
-            print(f"Checkpoint 2 Rollout: {time.time()-update_start}. Steps taken: {args.num_steps}")
+            # print(f"Checkpoint 2 Rollout: {time.time()-update_start}. Steps taken: {args.num_steps}")
             new_time = time.time()
             # difference = new_time-update_start
             # # print(f"Time this episode took: {difference}. Steps taken: {args.num_steps}")
@@ -463,33 +477,33 @@ class Simulation:
 
             ## Update 
             self.get_return_buffer()
-            print(f"Checkpoint 3a (Return Buffer): {time.time()-new_time}")
+            # print(f"Checkpoint 3a (Return Buffer): {time.time()-new_time}")
             sub_time = time.time()
             self.get_td_buffer()
-            print(f"Checkpoint 3b (TD Buffer): {time.time()-sub_time}")
+            # print(f"Checkpoint 3b (TD Buffer): {time.time()-sub_time}")
             sub_time = time.time()
             self.get_gae_buffer(lmbda=0.99)
-            print(f"Checkpoint 3c (GAE Buffer): {time.time()-sub_time}")
-            print(f"Checkpoint 3 (Buffers): {time.time()-new_time}")
+            # print(f"Checkpoint 3c (GAE Buffer): {time.time()-sub_time}")
+            # print(f"Checkpoint 3 (Buffers): {time.time()-new_time}")
             time2 = time.time()
             self.policy_update_single()
             self.value_update_single()
             self.log_data()
             self.flush_post_ep()
 
-            print(f"Checkpoint 4 (Updates): {time.time()-time2}")
+            # print(f"Checkpoint 4 (Updates): {time.time()-time2}")
 
             # print(f"Time the policy+value update took: {time.time()-before_update}")
             self.old_log_prob = self.log_prob_buffer.clone()
 
             if (update) % 100 == 0:
                 avg_reward = self.log_avg_reward[-1]
-                print("update:", update, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1])
+                print("update:", update, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1], " Episode Length: ", self.steps)
 
             if (update) % 1000 == 0 and self.plot:
                 self.plot_training()
                 continue
-            print(f"Total time taken per episode: {time.time()-update_start}")
+            # print(f"Total time taken per episode: {time.time()-update_start}")
 
 if __name__ == "__main__":
     args = parse_args()
@@ -501,9 +515,9 @@ if __name__ == "__main__":
     # sim.print_args_summary()
     # print("Start training")
     # print("WandB Project Name: ", args.wandb_project_name)
-    # sim.train()
+    sim.train()
     # sim.save_model(path="./weights")
     # print("Weights Saved!")
-    sim.test_functions()
+    # sim.test_functions()
     sim.wandb_run.finish()
 

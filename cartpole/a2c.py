@@ -211,11 +211,11 @@ class Simulation:
         env_td = []         
         for i, rew in enumerate(rewards):
             if i == rewards.shape[0]-1:
-                self.td_buffer.append(rew-values[i][0])
-                # self.td_buffer.append(rew-values[i])
+                # self.td_buffer.append(rew-values[i][0])
+                self.td_buffer.append(rew-values[i])
             else:
-                self.td_buffer.append(rew+self.gamma*values[i+1][0]-values[i][0])
-                # self.td_buffer.append(rew+self.gamma*values[i+1]-values[i])
+                # self.td_buffer.append(rew+self.gamma*values[i+1][0]-values[i][0])
+                self.td_buffer.append(rew+self.gamma*values[i+1]-values[i])
         return self.td_buffer    
     
     def get_gae_buffer(self, lmbda):
@@ -268,16 +268,28 @@ class Simulation:
             self.reward_buffer.append(1)
             self.value_buffer.append(i)
             self.log_prob_buffer.append(2*i)
+        self.reward_buffer[0] = 22
+        self.reward_buffer[1] = 22
+        self.reward_buffer[2] = 22
+        time1 = time.time()
         self.get_return_buffer()
+        return_time = time.time()-time1
+        time2 = time.time()
         self.get_td_buffer()
+        td_time = time.time()-time2
+        time3 = time.time()
         self.get_gae_buffer(lmbda=0.99)
+        gae_time = time.time()-time3
         loss_pol = 0
         for i in range(len(self.reward_buffer)):
             loss_pol+=self.log_prob_buffer[i]*(self.gae_buffer[i])
         loss_pol*=-1
         print("Return buffer: ", self.return_buffer)
+        print(f"Return Calculation Time: {return_time}")
         print("TD Buffer: ", self.td_buffer)
+        print(f"TD Buffer Calculation Time: {td_time}")
         print("GAE Buffer: ", self.gae_buffer)
+        print(f"GAE Buffer Calculation Time: {gae_time}")
         print("Loss calculated: ", loss_pol)
 
     def train(self, num_eps, seed=1):
@@ -350,13 +362,13 @@ sim = Simulation()
 pol = "/Users/stav.42/RL_Library/cartpole/weights/A2C.pth"
 # sim.load_weights(pol=pol)
 print("Simulation instantiated")
-# sim.test_functions()
+sim.test_functions()
 
-for seed in range(8):
-    sim.train(num_eps=3000, seed=seed)
-    sim.plot_training()
-    sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-    sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
+# for seed in range(8):
+#     sim.train(num_eps=3000, seed=seed)
+#     sim.plot_training()
+#     sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
+#     sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
     # sim.flush_post_iter()
 # sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
 # sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
