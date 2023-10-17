@@ -264,13 +264,10 @@ class Simulation:
     
 
     def test_functions(self):
-        for i in range(10):
+        for i in range(7):
             self.reward_buffer.append(1)
-            self.value_buffer.append(i)
             self.log_prob_buffer.append(2*i)
-        self.reward_buffer[0] = 22
-        self.reward_buffer[1] = 22
-        self.reward_buffer[2] = 22
+        self.value_buffer = [-0.1518, -0.1857, -0.3039, -0.2986, -0.3153, -0.2946, -0.3146]
         time1 = time.time()
         self.get_return_buffer()
         return_time = time.time()-time1

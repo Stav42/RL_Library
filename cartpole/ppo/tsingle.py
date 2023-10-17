@@ -223,12 +223,13 @@ class Simulation:
         return self.gae_buffer
 
     def get_td_buffer(self):
+        gamma = self.gamma
         for env in range(self.reward_buffer.size()[1]):   
             for i, rew in enumerate(self.reward_buffer[:self.steps, env]):
                 if i == self.reward_buffer.size()[0]-1:
                     self.td_buffer[i, env] = rew - self.value_buffer[i, env].detach()
                 else:
-                    self.td_buffer[i, env] = rew + self.gamma*self.value_buffer[i+1, env].detach() - self.value_buffer[i, env].detach()
+                    self.td_buffer[i, env] = rew + gamma*self.value_buffer[i+1, env].detach() - self.value_buffer[i, env].detach()
         return self.td_buffer
 
     def policy_update(self):

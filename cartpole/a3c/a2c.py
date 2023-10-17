@@ -273,10 +273,10 @@ class Simulation:
         plt.show()
 
     def test_functions(self):
-        for i in range(10):
+        for i in range(8):
             self.reward_buffer.append(1)
-            self.value_buffer.append(i)
             self.log_prob_buffer.append(2*i)
+        
         self.get_return_buffer()
         self.get_td_buffer_corrected()
         self.get_gae_buffer_corrected(lmbda=0.99)
