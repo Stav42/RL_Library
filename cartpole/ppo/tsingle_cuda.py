@@ -23,11 +23,19 @@ from multiprocessing import Pool, Manager
 
 torch.set_printoptions(threshold=10000)
 
+# set device to cpu or cuda
+device = torch.device('cpu')
+if(torch.cuda.is_available()): 
+    device = torch.device('cuda:0') 
+    torch.cuda.empty_cache()
+    print("Device set to : " + str(torch.cuda.get_device_name(device)))
+else:
+    print("Device set to : cpu")
 
-class Policy_Network():
+class Policy_Network(nn.Module):
 
     def __init__(self, obs_space_dims, action_space_dims):
-        super().__init__()
+        super(Policy_Network, self).__init__()
 
         hidden_space1 = 16  # Nothing special with 16, feel free to change
         hidden_space2 = 32  # Nothing special with 32, feel free to change
@@ -51,10 +59,10 @@ class Policy_Network():
 
         return action_mean, std
 
-class Value_Network():
+class Value_Network(nn.Module):
 
     def __init__(self, obs_space_dims):
-        super().__init__()
+        super(Value_Network, self).__init__()
 
         hidden_space1 = 16  # Nothing special with 16, feel free to change
         hidden_space2 = 8  # Nothing special with 32, feel free to change
@@ -87,21 +95,21 @@ class Simulation:
         self.obs_space_dim = self.env.observation_space.shape[0]
         self.action_space_dim = self.env.action_space.shape[0]
 
-        self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim)
+        self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim).to(device)
         self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
 
-        self.value = Value_Network(self.obs_space_dim)
+        self.value = Value_Network(self.obs_space_dim).to(device)
         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
 
-        self.log_prob_buffer = torch.zeros((args.num_steps, 1))
-        self.reward_buffer = torch.zeros((args.num_steps, 1))
+        self.log_prob_buffer = torch.zeros((args.num_steps, 1)).to(device)
+        self.reward_buffer = torch.zeros((args.num_steps, 1)).to(device)
         self.steps = 0
-        self.return_buffer = torch.zeros((args.num_steps, 1))
+        self.return_buffer = torch.zeros((args.num_steps, 1)).to(device)
         self.update_time_buffer = []
         self.update_steps_buffer = []
-        self.value_buffer = torch.zeros((args.num_steps, 1))
-        self.td_buffer = torch.zeros((args.num_steps, 1))
-        self.gae_buffer = torch.zeros((args.num_steps, 1))
+        self.value_buffer = torch.zeros((args.num_steps, 1)).to(device)
+        self.td_buffer = torch.zeros((args.num_steps, 1)).to(device)
+        self.gae_buffer = torch.zeros((args.num_steps, 1)).to(device)
         self.epsilon = 0
         self.wandb_run = None
         self.global_eps = 0
@@ -145,7 +153,7 @@ class Simulation:
 
 
     def sample_action(self, obs, step):
-        obs = torch.tensor(np.array(obs), dtype=torch.float32)
+        obs = torch.tensor(np.array(obs), dtype=torch.float32).to(device)
         mean, dev = self.policy.forward(obs)
         distrib = Normal(mean, dev)
         action = distrib.sample()
@@ -262,7 +270,7 @@ class Simulation:
         self.pol_optimizer.zero_grad()
 
     def policy_update_single(self):
-        loss_pol = -torch.sum(self.log_prob_buffer.reshape(-1) * self.gae_buffer.reshape(-1))
+        loss_pol = -torch.sum(self.log_prob_buffer.reshape(-1) * self.gae_buffer.reshape(-1)).to(device)
         loss_pol.backward(retain_graph=True)
         # table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
         self.pol_optimizer.step()
@@ -287,20 +295,20 @@ class Simulation:
         mini_return = self.return_buffer.reshape(-1)
         mini_value = self.value_buffer.reshape(-1)
         loss_val =  (mini_return - mini_value)**2
-        loss = torch.sum(loss_val)
+        loss = torch.sum(loss_val).to(device)
         loss.backward(retain_graph=True)
         self.val_optimizer.step()
         self.val_optimizer.zero_grad()
 
     def log_data(self):
-        mean_rew = np.array(self.reward_buffer).sum()
+        mean_rew = np.array(self.reward_buffer.cpu()).sum()
         self.log_avg_reward.append(mean_rew)
-        mean_ret = np.array(self.return_buffer).sum()
+        mean_ret = np.array(self.return_buffer.cpu()).sum()
         self.log_avg_return.append(mean_ret)
         val_buffer = self.value_buffer
         for i, val in enumerate(range(len(val_buffer))):
             val_buffer[i] = val_buffer[i].detach()
-        val_buffer = np.array(val_buffer.detach())
+        val_buffer = np.array(val_buffer.cpu().detach())
         mean_val = val_buffer.mean()
         self.log_avg_value.append(mean_val)
 
@@ -422,7 +430,7 @@ class Simulation:
             # print("Update: ", update)
             init_time = time.time()
             obs, info = self.env.reset(seed=seed)
-            obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
+            obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(device)
             step_time = 0
             update_start = time.time()
             done = False
@@ -434,11 +442,12 @@ class Simulation:
                 global_step+=1*args.num_envs
                 self.steps+=1
                 action = self.sample_action(obs, step=step)
-                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
+                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(device)
                 val = self.value.forward(obs_tensor)
                 self.value_buffer[step, :] = val
-                obs, reward, terminated, truncated, info = self.env.step(action)
-                self.reward_buffer[step, :] = torch.tensor(reward)
+                #Why action.cpu.numpy no idea
+                obs, reward, terminated, truncated, info = self.env.step(action.cpu().numpy())
+                self.reward_buffer[step, :] = torch.tensor(reward).to(device)
                 # print(f"Step {step} Reward {reward} Action {action} Truncated {truncated} Terminated {terminated}")
                 step_dur = time.time()-update_start
                 step_time+=step_dur
