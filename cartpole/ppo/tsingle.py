@@ -93,15 +93,15 @@ class Simulation:
         self.value = Value_Network(self.obs_space_dim)
         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
 
-        self.log_prob_buffer = torch.zeros((args.num_steps, 1))
-        self.reward_buffer = torch.zeros((args.num_steps, 1))
+        self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.reward_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.steps = 0
-        self.return_buffer = torch.zeros((args.num_steps, 1))
+        self.return_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.update_time_buffer = []
         self.update_steps_buffer = []
-        self.value_buffer = torch.zeros((args.num_steps, 1))
-        self.td_buffer = torch.zeros((args.num_steps, 1))
-        self.gae_buffer = torch.zeros((args.num_steps, 1))
+        self.value_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.td_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.gae_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.epsilon = 0
         self.wandb_run = None
         self.global_eps = 0
@@ -191,45 +191,33 @@ class Simulation:
             tmp_list[length-i-1] = val
         return tmp_list
 
-    def get_return_buffer(self):
-        time3 = time.time()
-        # rewards = torch.flip(self.reward_buffer, [0])
+    def get_return_buffer(self, masks):
         gamma = self.gamma
-        assert self.steps != 0, "0 time steps"
-        # print(f"        Flipping: ", time.time()-time3)
-        time3 = time.time()
-        for env in range(self.reward_buffer.size()[1]):
-            for i, reward in enumerate(torch.flip(self.reward_buffer[:self.steps, env], [0])):
-                # print(f"i: {i} and reward is {reward}")
-                if i == 0:
-                    self.return_buffer[self.steps-i-1, env] = reward
-                else:
-                    self.return_buffer[self.steps-i-1, env] = reward + self.return_buffer[self.steps-i, env]*gamma
-        # print(f"        Calculating return: ", time.time()-time3)
-        # time3 = time.time()
-        # self.return_buffer = torch.flip(self.return_buffer, [0])
-        # print(f"        Flipping return: ", time.time()-time3)
+        # print(f"mask: {masks}")
+        for i, reward in enumerate(torch.flip(self.reward_buffer[:self.steps, :], [0])):
+            if i == 0:
+                self.return_buffer[self.steps-i-1, :] = reward
+            else:
+                self.return_buffer[self.steps-i-1, :] = reward + masks[self.steps-i-1, :]*self.return_buffer[self.steps-i, :]*gamma
         return self.return_buffer
     
-    def get_gae_buffer(self, lmbda):
+    def get_gae_buffer(self, lmbda, masks):
         gamma = self.gamma
-        for env in range(self.td_buffer.size()[1]):
-            l = self.steps
-            for i in range(l):
-                if i == 0:
-                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env]
-                else:
-                    self.gae_buffer[l-i-1][env] = self.td_buffer[l-i-1][env].clone() + lmbda*gamma*self.gae_buffer[l-i][env].clone().detach()
+        l = self.steps
+        for i in range(l):
+            if i == 0:
+                self.gae_buffer[l-i-1][:] = self.td_buffer[l-i-1][:]
+            else:
+                self.gae_buffer[l-i-1][:] = self.td_buffer[l-i-1][:].clone() +  masks[l-i-1, :]*lmbda*gamma*self.gae_buffer[l-i][:].clone().detach()
         return self.gae_buffer
 
-    def get_td_buffer(self):
+    def get_td_buffer(self, masks):
         gamma = self.gamma
-        for env in range(self.reward_buffer.size()[1]):   
-            for i, rew in enumerate(self.reward_buffer[:self.steps, env]):
-                if i == self.reward_buffer.size()[0]-1:
-                    self.td_buffer[i, env] = rew - self.value_buffer[i, env].detach()
-                else:
-                    self.td_buffer[i, env] = rew + gamma*self.value_buffer[i+1, env].detach() - self.value_buffer[i, env].detach()
+        for i, rew in enumerate(self.reward_buffer[:self.steps, 0]):
+            if i == self.reward_buffer.size()[0]-1:
+                self.td_buffer[i, :] = rew - self.value_buffer[i, :].detach()
+            else:
+                self.td_buffer[i, :] = rew +  masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
         return self.td_buffer
 
     def policy_update(self):
@@ -377,21 +365,26 @@ class Simulation:
         print(f"Reward Value: {self.reward_buffer.sum()}")
 
     def test_functions(self):
-        sim.steps=10
-        self.reward_buffer[:10, :] = 1
-        print("Reward Buffer: ", self.reward_buffer.transpose(0, 1))
-        for i in range(10):
+        sim.steps=args.num_steps
+        self.reward_buffer[:, :] = 1
+        masks = torch.ones(args.num_steps, args.num_envs)
+        for i in range(5):
+            masks[5+3*i][i] = 0
+        
+        print("Reward Buffer: ", self.reward_buffer)
+        for i in range(args.num_steps):
             self.value_buffer[i, :] = i
             self.log_prob_buffer[i, :] = 2*i
-        self.reward_buffer[:3, :] = 22
+        print(f"Value Buffer: {self.value_buffer}")
+        # self.reward_buffer[:3, :] = 22
         time1 = time.time()
-        self.get_return_buffer()
+        self.get_return_buffer(masks)
         return_time = time.time()-time1
         time2 = time.time()
-        self.get_td_buffer()
+        self.get_td_buffer(masks)
         td_time = time.time()-time2
         time3 = time.time()
-        self.get_gae_buffer(lmbda=0.99)
+        self.get_gae_buffer(lmbda=0.99, masks=masks)
         gae_time = time.time()-time3
         loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer)
         print("Return buffer: ", self.return_buffer.transpose(0, 1))
@@ -516,9 +509,9 @@ if __name__ == "__main__":
     # sim.print_args_summary()
     # print("Start training")
     # print("WandB Project Name: ", args.wandb_project_name)
-    sim.train()
+    # sim.train()
     # sim.save_model(path="./weights")
     # print("Weights Saved!")
-    # sim.test_functions()
+    sim.test_functions()
     # sim.wandb_run.finish()
 
