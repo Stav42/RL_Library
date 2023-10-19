@@ -161,14 +161,14 @@ class Simulation:
         )
 
 
-    def sample_action(self, obs, step):
+    def sample_action(self, obs, action=None):
         obs = torch.tensor(np.array(obs), dtype=torch.float32)
         mean, dev = self.policy.forward(obs)
         distrib = Normal(mean, dev)
-        action = distrib.sample()
+        if action is None:
+            action = distrib.sample()
         logp = distrib.log_prob(action).sum(axis=-1)
-        self.log_prob_buffer[step, :] = logp
-        return action
+        return action, logp
     
     def save_model(self, path):
         path = path + "/Cartpole_PPO.pth"
@@ -237,76 +237,20 @@ class Simulation:
                 self.td_buffer[i, :] = rew + masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
         return self.td_buffer
 
-    def mini_batch_update(self, args):
-        mini_batch_indices, log_prob_buffer, gae_buffer = args
-        mini_batch_log_probs = log_prob_buffer.reshape(-1)[mini_batch_indices]
-        mini_batch_gae = gae_buffer.reshape(-1)[mini_batch_indices]
-        loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
-        loss_pol.backward(retain_graph=True)
-        # print("Backward Done")
-
     def policy_update_single(self):
-        # for epoch in range(args.update_epochs):
         loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer)
-        # print("Loss Pol: ", loss_pol)
         self.pol_optimizer.zero_grad()
         loss_pol.backward()
         self.pol_optimizer.step()
 
     def value_update_single(self):
-        # for epoch in range(args.update_epochs):
         mini_return = self.return_buffer
         mini_value = self.value_buffer
         loss_val =  (mini_return - mini_value)**2
         loss = torch.sum(loss_val)
-        # print("Loss Value: ", loss)
         self.val_optimizer.zero_grad()
         loss.backward()
         self.val_optimizer.step()
-
-    def policy_update(self):
-        n_mini_batch = args.num_minibatches
-        batch_size = args.batch_size
-        mini_batch_size = args.minibatch_size
-        indices = np.random.permutation(batch_size)
-        init_time = time.time()
-        for epoch in range(args.update_epochs):
-            np.random.shuffle(indices)  
-            for i in range(n_mini_batch):
-                # print("Epoch|Batch: ", epoch, "|", i)
-                mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
-                mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
-                mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
-                loss_pol = -torch.sum(mini_batch_log_probs * mini_batch_gae)
-                loss_pol.backward(retain_graph=True)
-                self.upd_rollout_steps += mini_batch_gae.shape[0]
-                self.upd_rollout_time += time.time() - init_time
-                self.update_steps_buffer.append(self.upd_rollout_steps)
-                self.update_time_buffer.append(self.upd_rollout_time)
-                # self.writer.add_scalar('rollouts for pol upd vs time taken', scalar_value=self.upd_rollout_time, global_step=self.upd_rollout_steps)
-        
-        # table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
-        # self.wandb_logging(table=table, title="Update (backprop) time per rollout", x_title="Update Steps", y_title="Time (s)")
-        # for name, param in self.policy.policy_net.named_parameters():
-        #     if param.requires_grad:
-        #         print(name, param.grad)
-        self.pol_optimizer.step()
-        self.pol_optimizer.zero_grad()
-
-    def value_update(self):
-        n_mini_batch = args.num_minibatches
-        total_samples = args.num_steps * args.num_envs
-        mini_batch_size = total_samples // n_mini_batch
-        indices = np.random.permutation(total_samples)
-        for i in range(n_mini_batch):
-            mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
-            mini_return = self.return_buffer.reshape(-1)[mini_batch_indices]
-            mini_value = self.value_buffer.reshape(-1)[mini_batch_indices]
-            loss_val =  (mini_return - mini_value)**2
-            loss = torch.sum(loss_val)
-            loss.backward(retain_graph=True)
-        self.val_optimizer.step()
-        self.val_optimizer.zero_grad()
 
     def log_data(self):
         mean_rew = np.array(self.reward_buffer).sum()
@@ -373,21 +317,6 @@ class Simulation:
         ax[1, 2].set_ylabel("Average Value")
         plt.show()
 
-    def ppo_update(self):
-        loss_pol = 0
-        size = min(len(self.reward_buffer), len(self.old_log_prob))
-        for i in range(size):
-            logratio = self.log_prob_buffer[i] - self.old_log_prob[i].detach()
-            ratio = torch.exp(logratio)
-            tmp_loss1 = -1*self.gae_buffer[i].detach()*ratio
-            tmp_loss2 = -1*self.gae_buffer[i].detach()*torch.clamp(ratio, 1-self.clip_coeff, 1+self.clip_coeff)
-            loss_pol += torch.max(tmp_loss1, tmp_loss2).mean()
-
-        loss_pol/=len(self.reward_buffer)
-        self.pol_optimizer.zero_grad()
-        loss_pol.backward()
-        self.pol_optimizer.step()
-
     def print_args_summary(self):
         print("Arguments passed to the script:")
         for arg, value in vars(args).items():
@@ -407,6 +336,35 @@ class Simulation:
         print(f"Return Value: {self.return_buffer.mean()}")
         print(f"Reward Value: {self.reward_buffer.mean()}")
 
+    def learn(self):
+        b_inds = np.arange(args.batch_size)
+        clipfracs = []
+        for epoch in range(args.update_epochs):
+            np.random.shuffle(b_inds)
+            for start in range(0, args.batch_size, args.minibatch_size):
+                end = start + args.minibatch_size
+                mb_inds = b_inds[start:end]
+                _, new_logprob = self.sample_action(b_obs[mb_inds], b_actions[mb_inds])
+                new_val = self.value.forward(b_obs[mb_inds])
+                logratio = new_logprob - b_logprob[mb_inds]
+                ratio = logratio.exp()
+                mb_advantages = b_advantages[mb_inds]
+
+                pg_loss1 = -mb_advantages*ratio
+                pg_loss2 = -mb_advantages*torch.clamp(ratio, 1 - args.clip_coef, 1 + args.clip_coef)
+                pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+
+                value_loss = ((new_val - self.value_buffer[mb_inds])**2).mean()
+            
+            self.pol_optimizer.zero_grad()
+            pg_loss.backward()
+            self.pol_optimizer.step()
+
+            self.val_optimizer.zero_grad()
+            value_loss.backward()
+            self.val_optimizer.step()
+
+                
 
     def train(self, seed=1):
         
@@ -433,11 +391,11 @@ class Simulation:
             env_steps = [0]*args.num_envs
             self.global_eps+=1
             masks = torch.zeros(args.num_steps, args.num_envs)
-            # print(f"Time before sampling: {time.time()}")
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
                 self.steps+=1
-                action = self.sample_action(obs, step=step)
+                action, log_probability = self.sample_action(obs)
+                self.log_prob_buffer[step, :] = log_probability
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
                 val = self.value.forward(obs_tensor)
                 self.value_buffer[step, :] = torch.transpose(val, 0, 1)
@@ -447,7 +405,6 @@ class Simulation:
                 self.reward_buffer[step, :] = torch.tensor(reward)
                 step_dur = time.time()-update_start
                 step_time+=step_dur
-                # print(f"Done: {done}")
                 masks[step] = torch.tensor([not term for term in done])
                 if done.any() == True:
                     for index, status in enumerate(done):
@@ -455,47 +412,14 @@ class Simulation:
                             self.episode_length.append(env_steps[index])
                             env_steps[index] = 0
                 
-                    
-            # new_time = time.time()
-            # difference = new_time-update_start
-            # global_time+=difference
-            # global_step_list.append(global_step)
-            # global_time_list.append(global_time)
-            # global_value_list.append(self.value_buffer.mean())
-            # global_return_list.append(self.return_buffer.mean())
-            # table = [[x, y/x] for (x, y) in zip(global_step_list, global_time_list)]
-            # self.wandb_logging(title="Sampling Rollout Time per step", table=table, x_title="Steps", y_title="Time Per Rollout")
-            # table = [[x, y] for (x, y) in zip(global_step_list, global_value_list)]
-            # self.wandb_logging(title="Average value", table=table, x_title="Steps", y_title="Average Value")
-            # table = [[x, y] for (x, y) in zip(global_step_list, global_return_list)]
-            # self.wandb_logging(title="Average returns", table=table, x_title="Steps", y_title="Average Returns")
-
-            # self.writer.add_scalar('Average Value post rollouts amongst envs', scalar_value=self.value_buffer.mean(), global_step=global_step)
-            # self.writer.add_scalar('Average Returns post rollout amongst envs', scalar_value=self.reward_buffer.mean(), global_step=global_step)
-
-            # self.update_steps_buffer.append(global_step)
-            # self.update_time_buffer.append(step_time)
             step_time/=global_step
             self.eps_run+=1
-            # update_time = time.time()
-            # train_time = time.time()
-
-            ## Update 
-            # print(f"Value buffer: {self.value_buffer[:self.steps, :]}")           
-            # print(f"Reward buffer: {self.reward_buffer[:self.steps, :]}")           
             self.get_return_buffer(masks)
-            # print(f"Return buffer: {self.return_buffer[:self.steps, :]}")
             self.get_td_buffer(masks)
-            # print(f"TD Error buffer: {self.td_buffer[:self.steps, :]}")       
             self.get_gae_buffer(lmbda=0.99, masks=masks)
-            # print(f"GAE buffer: {self.gae_buffer[:self.steps, :]}")
-            self.policy_update_single()
-            self.value_update_single()
-            # self.print_stats()
-            # print("Updated policy and critic!")
+            self.learn()
             self.log_data()
             self.flush_post_ep()
-            # self.old_log_prob = self.log_prob_buffer.clone()
 
             if (update) % 40 == 0:
                 avg_reward = self.log_avg_reward[-1]

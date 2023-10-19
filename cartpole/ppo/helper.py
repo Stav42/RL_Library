@@ -23,7 +23,9 @@ def parse_args():
     parser.add_argument('--description', type=str, required=True, help="One-word-description for experiment name")
     parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggle learning rate annealing for policy and value networks")
-
+    parser.add_argument("--clip-coef", type=float, default=0.2,
+        help="the surrogate clipping coefficient")
+    
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
