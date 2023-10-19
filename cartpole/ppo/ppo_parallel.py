@@ -1,40 +1,27 @@
 import random
 import matplotlib.pyplot as plt
+import psutil
 import numpy as np
+import os
 import torch
 import argparse
 import time
+import pickle
 import torch.nn as nn
 from torch.distributions.normal import Normal
 import gymnasium as gym
 from distutils.util import strtobool
+from datetime import datetime
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from typing import Optional
 import wandb
 from torch.utils.tensorboard import SummaryWriter
-
+from debugging import check_values_same
+from helper import parse_args
 import functools
+from multiprocessing import Pool, Manager
 
-from sample_factory.cfg.arguments import parse_full_cfg, parse_sf_args
-from sample_factory.envs.env_utils import register_env
-from sample_factory.train import run_rl
-
-from datetime import date
-today = date.today()
-d = str(today.strftime("%b-%d-%Y"))
-
-def parse_args():
-    parser =  argparse.ArgumentParser()
-    parser.add_argument('--exp-name', type=str, default=d, help="name of this experiment")
-    parser.add_argument('--gym-id', type=str, default="Cartpole-V1", help="id of this environment")
-    parser.add_argument('--learning-rate', type=float, default=2.5e-4, help="set learning rate for algorithm")
-    parser.add_argument('--seed', type=int, default=1, help="seed of this experiment")
-    parser.add_argument('--track', type=lambda x:bool(strtobool(x)), default=False, nargs="?", const="True", help="To enable WandB tracking")
-    parser.add_argument('--wandb-project-name', type=str, default="Prototype", help="the wandb's project name")
-    parser.add_argument('--wandb-entity', type=str, default=None, help="the entity (team) of wandb's project")
-    args = parser.parse_args()
-    return args
-
+torch.set_printoptions(threshold=10000)
 
 
 class Policy_Network():
@@ -60,7 +47,7 @@ class Policy_Network():
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         action_mean = self.policy_net(x)
-        std = torch.exp(self.log_std)
+        std = torch.exp(self.log_std)   
 
         return action_mean, std
 
@@ -105,34 +92,42 @@ class Simulation:
 
         self.env_id = "InvertedPendulum-v4"
         self.num_cpu = 16
-        self.envs = SubprocVecEnv([make_env(args.gym_id, i) for i in range(args.num_envs)])
-        self.obs_space_dims = self.env.observation_space.shape[0]
-        self.action_space_dims = self.env.action_space.shape[0]
+        self.envs = SubprocVecEnv([make_env(args.gym_id, seed=i, rank=i) for i in range(args.num_envs)])
         self.learning_rate = 1e-4
         self.gamma = 0.99
         self.eps = 1e-6
 
-        self.policy = Policy_Network(self.obs_space_dims, self.action_space_dims)
+        self.obs_space_dim = self.envs.observation_space.shape[0]
+        self.action_space_dim = self.envs.action_space.shape[0]
+
+        self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim)
         self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
 
-        self.value = Value_Network(self.obs_space_dims)
+        self.value = Value_Network(self.obs_space_dim)
         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
 
-        self.log_prob_buffer = []
-        self.reward_buffer = []
-        self.return_buffer = []
+        self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.reward_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.return_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.steps = 0
         self.update_time_buffer = []
         self.update_steps_buffer = []
-        self.value_buffer = []
-        self.td_buffer = []
-        self.gae_buffer = []
+        self.value_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.td_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.gae_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.epsilon = 0
+        self.wandb_run = None
+        self.global_eps = 0
+        self.episode_length = []
 
         self.log_avg_reward = []
         self.log_avg_return = []
         self.log_avg_value = []
 
-        self.old_log_prob = []
+        self.upd_rollout_time = 0
+        self.upd_rollout_steps = 0
+
+        self.old_log_prob = torch.zeros((args.num_steps, args.num_envs))
         self.training_step = 0
         self.eps_run = 0
 
@@ -143,7 +138,7 @@ class Simulation:
 
 
     def tensorboard_init(self):
-        run_name = f"{args.gym_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+        run_name = f"{args.gym_id}__{args.description}__{args.exp_name}__{int(time.time())}"
         self.writer = SummaryWriter(f"runs/{run_name}")
         self.writer.add_text(
             "Hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()]))
@@ -151,7 +146,11 @@ class Simulation:
 
     
     def wandb_init(self):
-        wandb.init(
+        current_time_seconds = time.time()
+        current_datetime = datetime.fromtimestamp(current_time_seconds)
+        time_of_day = current_datetime.strftime("%H-%M")
+        run_name = f"{args.gym_id}__{args.description}__{args.exp_name}__{time_of_day}"
+        self.wandb_run = wandb.init(
             project=args.wandb_project_name, 
             entity=args.wandb_entity,
             sync_tensorboard=True,
@@ -162,23 +161,13 @@ class Simulation:
         )
 
 
-
-    def make_mujoco_env(env_name, env_id, _cfg, _env_config, render_mode: Optional[str] = None, **kwargs):
-        env = gym.make(env_id, render_mode=render_mode)
-        return env
-
-    def register_components(self):
-        for env in self.ENVS:
-            register_env(env.name, self.make_mujoco_env)
-
-
-    def sample_action(self, obs):
+    def sample_action(self, obs, step):
         obs = torch.tensor(np.array(obs), dtype=torch.float32)
         mean, dev = self.policy.forward(obs)
         distrib = Normal(mean, dev)
         action = distrib.sample()
         logp = distrib.log_prob(action).sum(axis=-1)
-        self.log_prob_buffer.append(logp)
+        self.log_prob_buffer[step, :] = logp
         return action
     
     def save_model(self, path):
@@ -190,12 +179,19 @@ class Simulation:
         torch.save(self.value.value_net.state_dict(), path)
     
     def flush_post_ep(self):
-        self.log_prob_buffer.clear()
-        self.reward_buffer.clear()
-        self.return_buffer.clear()
-        self.value_buffer.clear()
-        self.td_buffer.clear()
-        self.gae_buffer.clear()
+        self.log_prob_buffer    *= 0
+        self.reward_buffer      *= 0
+        self.return_buffer      *= 0
+        self.value_buffer       *= 0
+        self.td_buffer          *= 0
+        self.gae_buffer         *= 0
+        self.log_prob_buffer = self.log_prob_buffer.detach()
+        self.reward_buffer = self.reward_buffer.detach()
+        self.return_buffer = self.return_buffer.detach()
+        self.value_buffer = self.value_buffer.detach()
+        self.td_buffer = self.td_buffer.detach()
+        self.gae_buffer = self.gae_buffer.detach()
+        
 
     def flush_post_iter(self):
         self.flush_post_ep()
@@ -205,50 +201,122 @@ class Simulation:
         self.update_time_buffer.clear()
         self.log_avg_value.clear()
 
-    def get_return_buffer(self):
-        rewards = np.flip(np.array(self.reward_buffer))
-        acc_rew = 0
+    def flip_list(self, lt):
+        length = len(lt)
+        tmp_list = [0]*length
+        for i, val in enumerate(lt):
+            tmp_list[length-i-1] = val
+        return tmp_list
+
+    def get_return_buffer(self, masks):
         gamma = self.gamma
-        returns = []
-        for i, reward in enumerate(rewards):
-            acc_rew += (gamma**i) * reward
-        for i, reward in enumerate(rewards):
+        # for env in range(self.reward_buffer.size()[1]):
+        for i, reward in enumerate(torch.flip(self.reward_buffer[:self.steps, :], [0])):
             if i == 0:
-                returns.append(acc_rew)
-                prev_reward = reward
+                self.return_buffer[self.steps-i-1, :] = reward
             else:
-                returns.append((returns[-1]-prev_reward)/gamma)
-                prev_reward = reward
-        self.return_buffer = list(returns)
-        return returns
+                self.return_buffer[self.steps-i-1, :] = reward + masks[self.steps-i-1, :]*self.return_buffer[self.steps-i, :]*gamma
+        return self.return_buffer
     
-    def policy_update(self):
-        loss_pol = 0
-        log_prob = self.log_prob_buffer
-        for i in range(len(self.reward_buffer)):
-            loss_pol+=self.log_prob_buffer[i]*(self.gae_buffer[i].detach())
-        loss_pol*=-1
+    def get_gae_buffer(self, lmbda, masks):
+        gamma = self.gamma
+        l = self.steps
+        for i in range(l):
+            if i == 0:
+                self.gae_buffer[l-i-1][:] = self.td_buffer[l-i-1][:]
+            else:
+                self.gae_buffer[l-i-1][:] = self.td_buffer[l-i-1][:].clone() + masks[l-i-1, :]*lmbda*gamma*self.gae_buffer[l-i][:].clone().detach()
+        return self.gae_buffer
+
+    def get_td_buffer(self, masks):
+        gamma = self.gamma
+        for i, rew in enumerate(self.reward_buffer[:self.steps, 0]):
+            if i == self.reward_buffer.size()[0]-1:
+                self.td_buffer[i, :] = rew - self.value_buffer[i, :].detach()
+            else:
+                self.td_buffer[i, :] = rew + masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
+        return self.td_buffer
+
+    def mini_batch_update(self, args):
+        mini_batch_indices, log_prob_buffer, gae_buffer = args
+        mini_batch_log_probs = log_prob_buffer.reshape(-1)[mini_batch_indices]
+        mini_batch_gae = gae_buffer.reshape(-1)[mini_batch_indices]
+        loss_pol = -torch.mean(mini_batch_log_probs * mini_batch_gae)
+        loss_pol.backward(retain_graph=True)
+        # print("Backward Done")
+
+    def policy_update_single(self):
+        # for epoch in range(args.update_epochs):
+        loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer)
+        # print("Loss Pol: ", loss_pol)
         self.pol_optimizer.zero_grad()
         loss_pol.backward()
         self.pol_optimizer.step()
 
-    def value_update(self):
-        loss_val = 0
-        for i in range(len(self.return_buffer)):
-            loss_val += (self.return_buffer[i]-self.value_buffer[i])**2
+    def value_update_single(self):
+        # for epoch in range(args.update_epochs):
+        mini_return = self.return_buffer
+        mini_value = self.value_buffer
+        loss_val =  (mini_return - mini_value)**2
+        loss = torch.sum(loss_val)
+        # print("Loss Value: ", loss)
         self.val_optimizer.zero_grad()
-        loss_val.backward()
+        loss.backward()
         self.val_optimizer.step()
 
+    def policy_update(self):
+        n_mini_batch = args.num_minibatches
+        batch_size = args.batch_size
+        mini_batch_size = args.minibatch_size
+        indices = np.random.permutation(batch_size)
+        init_time = time.time()
+        for epoch in range(args.update_epochs):
+            np.random.shuffle(indices)  
+            for i in range(n_mini_batch):
+                # print("Epoch|Batch: ", epoch, "|", i)
+                mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
+                mini_batch_log_probs = self.log_prob_buffer.reshape(-1)[mini_batch_indices]
+                mini_batch_gae = self.gae_buffer.reshape(-1)[mini_batch_indices]
+                loss_pol = -torch.sum(mini_batch_log_probs * mini_batch_gae)
+                loss_pol.backward(retain_graph=True)
+                self.upd_rollout_steps += mini_batch_gae.shape[0]
+                self.upd_rollout_time += time.time() - init_time
+                self.update_steps_buffer.append(self.upd_rollout_steps)
+                self.update_time_buffer.append(self.upd_rollout_time)
+                # self.writer.add_scalar('rollouts for pol upd vs time taken', scalar_value=self.upd_rollout_time, global_step=self.upd_rollout_steps)
+        
+        # table = [[x, y/x] for (x, y) in zip(self.update_steps_buffer, self.update_time_buffer)]
+        # self.wandb_logging(table=table, title="Update (backprop) time per rollout", x_title="Update Steps", y_title="Time (s)")
+        # for name, param in self.policy.policy_net.named_parameters():
+        #     if param.requires_grad:
+        #         print(name, param.grad)
+        self.pol_optimizer.step()
+        self.pol_optimizer.zero_grad()
+
+    def value_update(self):
+        n_mini_batch = args.num_minibatches
+        total_samples = args.num_steps * args.num_envs
+        mini_batch_size = total_samples // n_mini_batch
+        indices = np.random.permutation(total_samples)
+        for i in range(n_mini_batch):
+            mini_batch_indices = indices[i * mini_batch_size: (i + 1) * mini_batch_size]
+            mini_return = self.return_buffer.reshape(-1)[mini_batch_indices]
+            mini_value = self.value_buffer.reshape(-1)[mini_batch_indices]
+            loss_val =  (mini_return - mini_value)**2
+            loss = torch.sum(loss_val)
+            loss.backward(retain_graph=True)
+        self.val_optimizer.step()
+        self.val_optimizer.zero_grad()
+
     def log_data(self):
-        mean_rew = np.array(self.reward_buffer).mean()
+        mean_rew = np.array(self.reward_buffer).sum()
         self.log_avg_reward.append(mean_rew)
-        mean_ret = np.array(self.return_buffer).mean()
+        mean_ret = np.array(self.return_buffer[:self.steps, :]).mean()
         self.log_avg_return.append(mean_ret)
         val_buffer = self.value_buffer
         for i, val in enumerate(range(len(val_buffer))):
-            val_buffer[i] = val_buffer[i].detach().numpy()
-        val_buffer = np.array(val_buffer)
+            val_buffer[i] = val_buffer[i].detach()
+        val_buffer = np.array(val_buffer.detach())
         mean_val = val_buffer.mean()
         self.log_avg_value.append(mean_val)
 
@@ -269,38 +337,6 @@ class Simulation:
                 Y_mva.append(sum)
 
         return Y_mva
-    
-    def get_td_buffer(self):
-        rewards = np.flip(np.array(self.reward_buffer))
-        for i, rew in enumerate(rewards):
-            l = len(self.reward_buffer)
-            if i == 0:
-                self.td_buffer.append(rew-self.value_buffer[l-i-1])
-                continue
-            self.td_buffer.append(rew + self.gamma*self.value_buffer[l-i-2] - self.value_buffer[l-i-1])
-        td_buffer = [0]*len(self.td_buffer)
-        for i, td in enumerate(self.td_buffer):
-            td_buffer[l-i-1] = td
-        self.td_buffer = td_buffer
-        return self.td_buffer
-    
-    def get_gae_buffer(self, lmbda):
-        gae = 0
-        l = len(self.td_buffer)
-        for i in range(len(self.td_buffer)):
-            if i == 0:
-                gae += self.td_buffer[l-i-1]
-                self.gae_buffer.append(gae)
-                continue
-
-            ## orginally self.gamma*lmbda*gae.detach()
-            gae = self.td_buffer[l-i-1] + self.gamma*lmbda*gae.detach()
-            self.gae_buffer.append(gae)
-        gae_buffer = [0]*l
-        for i, gae in enumerate(self.gae_buffer):
-            gae_buffer[l-i-1] = gae
-        self.gae_buffer = gae_buffer
-        return self.gae_buffer
 
     
     def load_weights(self, pol=None, val=None):
@@ -345,89 +381,142 @@ class Simulation:
             ratio = torch.exp(logratio)
             tmp_loss1 = -1*self.gae_buffer[i].detach()*ratio
             tmp_loss2 = -1*self.gae_buffer[i].detach()*torch.clamp(ratio, 1-self.clip_coeff, 1+self.clip_coeff)
-            loss_pol += torch.max(tmp_loss1, tmp_loss2)
+            loss_pol += torch.max(tmp_loss1, tmp_loss2).mean()
 
         loss_pol/=len(self.reward_buffer)
         self.pol_optimizer.zero_grad()
         loss_pol.backward()
         self.pol_optimizer.step()
 
-    def train(self, num_eps, seed=1):
+    def print_args_summary(self):
+        print("Arguments passed to the script:")
+        for arg, value in vars(args).items():
+            print(f"{arg}: {value}")
+        print(f"num_update: {args.total_timesteps//args.batch_size}")
+        print(f"batch_size: {args.batch_size}")
+        
+
+    def wandb_logging(self, title, table, x_title, y_title):
+        table_rollout = wandb.Table(data=table, columns=[x_title, y_title])
+        wandb.log(
+            {title: wandb.plot.line(table_rollout, x_title, y_title, title=title)}
+        )        
+
+    def print_stats(self):
+        print(f"Average Value: {self.value_buffer.mean()}")
+        print(f"Return Value: {self.return_buffer.mean()}")
+        print(f"Reward Value: {self.reward_buffer.mean()}")
+
+
+    def train(self, seed=1):
         
         train_time = time.time()
         global_step=0
-        # next_obs = torch.Tensor(self.envs.reset())
+        self.global_eps=0
+        global_time=0
+
         next_done = torch.zeros(args.num_envs)
         num_upd = args.total_timesteps // args.batch_size
+        obs = self.envs.reset()
+        global_step_list = []
+        global_time_list = []
+        global_value_list = []
+        global_return_list = []
 
         for update in range(1, num_upd+1):
-            if args.anneal_lr:
-                frac = 1.0 - (update - 1.0) / num_eps
-                lrnow = frac * args.learning_rate
-                self.pol_optimizer.param_groups[0]["lr"] = lrnow
-                self.val_optimizer.param_groups[0]["lr"] = lrnow
-
-            obs, info = self.envs.reset(seed=seed)
+            obs = self.envs.reset()
             obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
-            self.value_buffer.append(self.value.forward(obs_tensor))
-            done = False
             step_time = 0
             update_start = time.time()
-            num_steps = 0
+            done = False
+            self.steps = 0
+            env_steps = [0]*args.num_envs
+            self.global_eps+=1
+            masks = torch.zeros(args.num_steps, args.num_envs)
+            # print(f"Time before sampling: {time.time()}")
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
-                action = self.sample_action(obs)
+                self.steps+=1
+                action = self.sample_action(obs, step=step)
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
                 val = self.value.forward(obs_tensor)
-                self.value_buffer.append(val.flatten())
-                obs, reward, terminated, truncated, info = self.envs.step(action)
-                self.reward_buffer.append(reward.view(-1))
-     
+                self.value_buffer[step, :] = torch.transpose(val, 0, 1)
+                obs, reward, done, info = self.envs.step(action)
+                for i in range(len(env_steps)):
+                    env_steps[i] += 1
+                self.reward_buffer[step, :] = torch.tensor(reward)
                 step_dur = time.time()-update_start
-                update_start = time.time()
                 step_time+=step_dur
-            
-            self.update_steps_buffer.append(num_steps)
+                # print(f"Done: {done}")
+                masks[step] = torch.tensor([not term for term in done])
+                if done.any() == True:
+                    for index, status in enumerate(done):
+                        if status == True:
+                            self.episode_length.append(env_steps[index])
+                            env_steps[index] = 0
+                
+                    
+            # new_time = time.time()
+            # difference = new_time-update_start
+            # global_time+=difference
+            # global_step_list.append(global_step)
+            # global_time_list.append(global_time)
+            # global_value_list.append(self.value_buffer.mean())
+            # global_return_list.append(self.return_buffer.mean())
+            # table = [[x, y/x] for (x, y) in zip(global_step_list, global_time_list)]
+            # self.wandb_logging(title="Sampling Rollout Time per step", table=table, x_title="Steps", y_title="Time Per Rollout")
+            # table = [[x, y] for (x, y) in zip(global_step_list, global_value_list)]
+            # self.wandb_logging(title="Average value", table=table, x_title="Steps", y_title="Average Value")
+            # table = [[x, y] for (x, y) in zip(global_step_list, global_return_list)]
+            # self.wandb_logging(title="Average returns", table=table, x_title="Steps", y_title="Average Returns")
+
+            # self.writer.add_scalar('Average Value post rollouts amongst envs', scalar_value=self.value_buffer.mean(), global_step=global_step)
+            # self.writer.add_scalar('Average Returns post rollout amongst envs', scalar_value=self.reward_buffer.mean(), global_step=global_step)
+
+            # self.update_steps_buffer.append(global_step)
+            # self.update_time_buffer.append(step_time)
             step_time/=global_step
             self.eps_run+=1
-
-            update_time = time.time()
-            update_dur = update_time - train_time
-            train_time = time.time()
-            self.update_time_buffer.append(update_dur)
+            # update_time = time.time()
+            # train_time = time.time()
 
             ## Update 
-            self.get_return_buffer()
-            self.get_td_buffer()
-            self.get_gae_buffer(lmbda=0.99)
-            if update != 0:
-                self.ppo_update()
-                self.value_update()
+            # print(f"Value buffer: {self.value_buffer[:self.steps, :]}")           
+            # print(f"Reward buffer: {self.reward_buffer[:self.steps, :]}")           
+            self.get_return_buffer(masks)
+            # print(f"Return buffer: {self.return_buffer[:self.steps, :]}")
+            self.get_td_buffer(masks)
+            # print(f"TD Error buffer: {self.td_buffer[:self.steps, :]}")       
+            self.get_gae_buffer(lmbda=0.99, masks=masks)
+            # print(f"GAE buffer: {self.gae_buffer[:self.steps, :]}")
+            self.policy_update_single()
+            self.value_update_single()
+            # self.print_stats()
+            # print("Updated policy and critic!")
             self.log_data()
-            # Cacheing previous policy's log buffer
-            self.old_log_prob = self.log_prob_buffer
             self.flush_post_ep()
+            # self.old_log_prob = self.log_prob_buffer.clone()
 
-            if (update+1) % 100 == 0:
+            if (update) % 40 == 0:
                 avg_reward = self.log_avg_reward[-1]
-                print("update:", update, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1])
+                print("update:", update, "Average Reward:", avg_reward, "Average Return: ", self.log_avg_return[-1], "Episode Length: ", np.array(self.episode_length[-10:]).mean())
 
-            if (update+1) % 1000 == 0 and self.plot:
-                self.plot_training()
+            if (update) % 10 == 0 and self.plot:
+                # self.plot_training()
+                continue
             
+if __name__ == "__main__":
+    args = parse_args()
+    sim = Simulation(args)
+    if args.track:
+        sim.wandb_init()
+        print("WandB initialization done")
+        sim.tensorboard_init()
+    sim.print_args_summary()
+    print("Start training")
+    print("WandB Project Name: ", args.wandb_project_name)
+    sim.train()
+    sim.save_model(path="./weights")
+    print("Weights Saved!")
+    sim.wandb_run.finish()
 
-sim = Simulation()
-pol = "/Users/stav.42/RL_Library/cartpole/weights/PPO.pth"
-print("Simulation instantiated")
-args = parse_args()
-print(args)
-
-# for seed in range(8):
-#     # add seeds
-#     sim.train(num_eps=3000, seed=seed)
-#     sim.plot_training()
-#     sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-#     sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
-#     # sim.flush_post_iter()
-# sim.save_model(path="/Users/stav.42/RL_Library/cartpole/weights/")
-# sim.save_value(path="/Users/stav.42/RL_Library/cartpole/weights/")
