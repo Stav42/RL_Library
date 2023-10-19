@@ -115,6 +115,8 @@ class Simulation:
         self.value_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.td_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.gae_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.obs_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.action_buffer = torch.zeros((args.num_steps, args.num_envs))
         self.epsilon = 0
         self.wandb_run = None
         self.global_eps = 0
@@ -341,14 +343,19 @@ class Simulation:
         clipfracs = []
         for epoch in range(args.update_epochs):
             np.random.shuffle(b_inds)
+            b_obs = self.obs_buffer.reshape(-1)
+            b_actions = self.action_buffer.reshape(-1)
+            b_logprob = self.log_prob_buffer.reshape(-1)
+            b_gae = self.gae_buffer.reshape(-1)
             for start in range(0, args.batch_size, args.minibatch_size):
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
+                
                 _, new_logprob = self.sample_action(b_obs[mb_inds], b_actions[mb_inds])
                 new_val = self.value.forward(b_obs[mb_inds])
                 logratio = new_logprob - b_logprob[mb_inds]
                 ratio = logratio.exp()
-                mb_advantages = b_advantages[mb_inds]
+                mb_advantages = b_gae[mb_inds]
 
                 pg_loss1 = -mb_advantages*ratio
                 pg_loss2 = -mb_advantages*torch.clamp(ratio, 1 - args.clip_coef, 1 + args.clip_coef)
@@ -356,30 +363,23 @@ class Simulation:
 
                 value_loss = ((new_val - self.value_buffer[mb_inds])**2).mean()
             
-            self.pol_optimizer.zero_grad()
-            pg_loss.backward()
-            self.pol_optimizer.step()
+                self.pol_optimizer.zero_grad()
+                pg_loss.backward()
+                self.pol_optimizer.step()
 
-            self.val_optimizer.zero_grad()
-            value_loss.backward()
-            self.val_optimizer.step()
+                self.val_optimizer.zero_grad()
+                value_loss.backward()
+                self.val_optimizer.step()
 
                 
 
     def train(self, seed=1):
         
-        train_time = time.time()
         global_step=0
         self.global_eps=0
-        global_time=0
 
-        next_done = torch.zeros(args.num_envs)
         num_upd = args.total_timesteps // args.batch_size
         obs = self.envs.reset()
-        global_step_list = []
-        global_time_list = []
-        global_value_list = []
-        global_return_list = []
 
         for update in range(1, num_upd+1):
             obs = self.envs.reset()
@@ -397,6 +397,8 @@ class Simulation:
                 action, log_probability = self.sample_action(obs)
                 self.log_prob_buffer[step, :] = log_probability
                 obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
+                self.obs_buffer[step, :] = obs_tensor
+                self.action_buffer[step, :] = action
                 val = self.value.forward(obs_tensor)
                 self.value_buffer[step, :] = torch.transpose(val, 0, 1)
                 obs, reward, done, info = self.envs.step(action)
