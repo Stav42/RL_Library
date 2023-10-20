@@ -433,7 +433,6 @@ class Simulation:
             env_steps = [0]*args.num_envs
             self.global_eps+=1
             masks = torch.zeros(args.num_steps, args.num_envs)
-            # print(f"Time before sampling: {time.time()}")
             for step in range(0, args.num_steps):
                 global_step+=1*args.num_envs
                 self.steps+=1
@@ -447,7 +446,6 @@ class Simulation:
                 self.reward_buffer[step, :] = torch.tensor(reward)
                 step_dur = time.time()-update_start
                 step_time+=step_dur
-                # print(f"Done: {done}")
                 masks[step] = torch.tensor([not term for term in done])
                 if done.any() == True:
                     for index, status in enumerate(done):
