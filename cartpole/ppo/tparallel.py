@@ -519,4 +519,3 @@ if __name__ == "__main__":
     sim.save_model(path="./weights")
     print("Weights Saved!")
     sim.wandb_run.finish()
-
