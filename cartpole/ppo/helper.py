@@ -25,6 +25,7 @@ def parse_args():
         help="Toggle learning rate annealing for policy and value networks")
     parser.add_argument("--clip-coef", type=float, default=0.2,
         help="the surrogate clipping coefficient")
+    parser.add_argument("--cuda", type=bool, default=False, help="Toggle CUDA if available")
     
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)

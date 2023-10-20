@@ -11,8 +11,12 @@ import gymnasium as gym
 from distutils.util import strtobool
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 import wandb
-from debugging import check_values_same
 from helper import parse_args
+import datetime
+from torch.utils.tensorboard import SummaryWriter
+
+# set device to cpu or cuda
+
 
 def make_env(gym_id, seed, rank, capture_video=None, run_name=None):
     def _init():
@@ -26,7 +30,7 @@ def make_env(gym_id, seed, rank, capture_video=None, run_name=None):
         return env
     return _init
 
-class Policy_Network():
+class Policy_Network(nn.Module):
 
     def __init__(self, obs_space_dims, action_space_dims):
         super().__init__()
@@ -53,7 +57,7 @@ class Policy_Network():
 
         return action_mean, std
 
-class Value_Network():
+class Value_Network(nn.Module):
 
     def __init__(self, obs_space_dims):
         super().__init__()
@@ -86,26 +90,34 @@ class Simulation:
         self.gamma = 0.99
         self.eps = 1e-6
 
+        self.device = torch.device('cpu')
+        if self.args.cuda == True and torch.cuda.is_available():
+            self.device = torch.device('cuda:0')
+            torch.cuda.empty_cache()
+            print("Device set to : " + str(torch.cuda.get_device_name(device)))
+        else:
+            print("Device set to : cpu")
+        
         self.obs_space_dim = self.envs.observation_space.shape[0]
         self.action_space_dim = self.envs.action_space.shape[0]
 
-        self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim)
+        self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim).to(self.device)
         self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
 
-        self.value = Value_Network(self.obs_space_dim)
+        self.value = Value_Network(self.obs_space_dim).to(self.device)
         self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
 
-        self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.reward_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.return_buffer = torch.zeros((args.num_steps, args.num_envs))
+        self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
+        self.reward_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
+        self.return_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
         self.steps = 0
         self.update_time_buffer = []
         self.update_steps_buffer = []
-        self.value_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.td_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.gae_buffer = torch.zeros((args.num_steps, args.num_envs))
-        self.obs_buffer = torch.zeros((args.num_steps, args.num_envs, self.obs_space_dim))
-        self.action_buffer = torch.zeros((args.num_steps, args.num_envs, self.action_space_dim))
+        self.value_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
+        self.td_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
+        self.gae_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
+        self.obs_buffer = torch.zeros((args.num_steps, args.num_envs, self.obs_space_dim)).to(self.device)
+        self.action_buffer = torch.zeros((args.num_steps, args.num_envs, self.action_space_dim)).to(self.device)
         self.epsilon = 0
         self.wandb_run = None
         self.global_eps = 0
@@ -115,10 +127,11 @@ class Simulation:
         self.log_avg_return = []
         self.log_avg_value = []
 
+
         self.upd_rollout_time = 0
         self.upd_rollout_steps = 0
 
-        self.old_log_prob = torch.zeros((self.args.num_steps, self.args.num_envs))
+        self.old_log_prob = torch.zeros((self.args.num_steps, self.args.num_envs)).to(self.device)
         self.training_step = 0
         self.eps_run = 0
 
@@ -153,7 +166,7 @@ class Simulation:
 
 
     def sample_action(self, obs, action=None):
-        obs = torch.tensor(np.array(obs), dtype=torch.float32)
+        obs = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
         mean, dev = self.policy.forward(obs)
         distrib = Normal(mean, dev)
         if action is None:
@@ -192,13 +205,6 @@ class Simulation:
         self.update_time_buffer.clear()
         self.log_avg_value.clear()
 
-    def flip_list(self, lt):
-        length = len(lt)
-        tmp_list = [0]*length
-        for i, val in enumerate(lt):
-            tmp_list[length-i-1] = val
-        return tmp_list
-
     def get_return_buffer(self, masks):
         gamma = self.gamma
         # for env in range(self.reward_buffer.size()[1]):
@@ -229,14 +235,14 @@ class Simulation:
         return self.td_buffer
     
     def log_data(self):
-        mean_rew = np.array(self.reward_buffer).sum()
+        mean_rew = np.array(self.reward_buffer.cpu()).sum()
         self.log_avg_reward.append(mean_rew)
-        mean_ret = np.array(self.return_buffer[:self.steps, :]).mean()
+        mean_ret = np.array(self.return_buffer[:self.steps, :].cpu()).mean()
         self.log_avg_return.append(mean_ret)
         val_buffer = self.value_buffer
         for i, val in enumerate(range(len(val_buffer))):
             val_buffer[i] = val_buffer[i].detach()
-        val_buffer = np.array(val_buffer.detach())
+        val_buffer = np.array(val_buffer.cpu().detach())
         mean_val = val_buffer.mean()
         self.log_avg_value.append(mean_val)
     
@@ -297,3 +303,29 @@ class Simulation:
             print(f"{arg}: {value}")
         print(f"num_update: {self.args.total_timesteps//self.args.batch_size}")
         print(f"batch_size: {self.args.batch_size}")
+    
+    def test_functions(self):
+        self.steps=10
+        self.reward_buffer[:10, :] = 1
+        print("Reward Buffer: ", self.reward_buffer.transpose(0, 1))
+        for i in range(10):
+            self.value_buffer[i, :] = i
+            self.log_prob_buffer[i, :] = 2*i
+        self.reward_buffer[:3, :] = 22
+        time1 = time.time()
+        self.get_return_buffer()
+        return_time = time.time()-time1
+        time2 = time.time()
+        self.get_td_buffer()
+        td_time = time.time()-time2
+        time3 = time.time()
+        self.get_gae_buffer(lmbda=0.99)
+        gae_time = time.time()-time3
+        loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer)
+        print("Return buffer: ", self.return_buffer.transpose(0, 1))
+        print(f"Return Calculation Time: {return_time}")
+        print("TD Buffer: ", self.td_buffer.transpose(0, 1))
+        print(f"TD Buffer Calculation Time: {td_time}")
+        print("GAE Buffer: ", self.gae_buffer.transpose(0, 1))
+        print(f"GAE Buffer Calculation Time: {gae_time}")
+        print("Loss calculated: ", loss_pol)

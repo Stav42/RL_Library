@@ -12,7 +12,7 @@ class A2CSimulation(Simulation):
         super().__init__(args)
 
     def policy_update_single(self):
-        loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer)
+        loss_pol = -torch.sum(self.log_prob_buffer * self.gae_buffer).to(self.device)
         self.pol_optimizer.zero_grad()
         loss_pol.backward()
         self.pol_optimizer.step()
@@ -21,7 +21,7 @@ class A2CSimulation(Simulation):
         mini_return = self.return_buffer
         mini_value = self.value_buffer
         loss_val =  (mini_return - mini_value)**2
-        loss = torch.sum(loss_val)
+        loss = torch.sum(loss_val).to(self.device)
         self.val_optimizer.zero_grad()
         loss.backward()
         self.val_optimizer.step()
@@ -35,7 +35,7 @@ class A2CSimulation(Simulation):
 
         for update in range(1, num_upd+1):
             obs = self.envs.reset()
-            obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
+            obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
             step_time = 0
             update_start = time.time()
             done = False
@@ -48,15 +48,15 @@ class A2CSimulation(Simulation):
                 self.steps+=1
                 action, log_probability = self.sample_action(obs)
                 self.log_prob_buffer[step, :] = log_probability
-                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
+                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
                 val = self.value.forward(obs_tensor)
                 self.value_buffer[step, :] = torch.transpose(val, 0, 1)
-                obs, reward, done, info = self.envs.step(action)
+                obs, reward, done, info = self.envs.step(action.cpu().numpy())
                 self.obs_buffer[step, :] = obs_tensor
                 self.action_buffer[step, :] = action
                 for i in range(len(env_steps)):
                     env_steps[i] += 1
-                self.reward_buffer[step, :] = torch.tensor(reward)
+                self.reward_buffer[step, :] = torch.tensor(reward).to(self.device)
                 step_dur = time.time()-update_start
                 step_time+=step_dur
                 masks[step] = torch.tensor([not term for term in done])

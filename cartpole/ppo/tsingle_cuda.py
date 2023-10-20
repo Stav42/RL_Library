@@ -192,12 +192,6 @@ class Simulation:
         self.update_time_buffer.clear()
         self.log_avg_value.clear()
 
-    def flip_list(self, lt):
-        length = len(lt)
-        tmp_list = [0]*length
-        for i, val in enumerate(lt):
-            tmp_list[length-i-1] = val
-        return tmp_list
 
     def get_return_buffer(self):
         time3 = time.time()

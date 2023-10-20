@@ -55,7 +55,7 @@ class PPOSimulation(Simulation):
         for update in range(1, num_upd+1):
             print(f"Update: {update}")
             obs = self.envs.reset()
-            obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
+            obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
             step_time = 0
             update_start = time.time()
             done = False
