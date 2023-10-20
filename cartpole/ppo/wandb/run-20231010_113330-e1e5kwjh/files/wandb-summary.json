@@ -1,1 +1,0 @@
-{"global_step": 288000, "_timestamp": 1696918267.441352, "_runtime": 456.85801696777344, "_step": 1439, "Sampling rollout vs time": 426.8059387207031, "Average Value post rollouts amongst envs": -0.28150996565818787, "Average Returns post rollout amongst envs": 1.0, "rollouts for pol upd vs time taken": -20160.76953125, "_wandb": {"runtime": 456}}

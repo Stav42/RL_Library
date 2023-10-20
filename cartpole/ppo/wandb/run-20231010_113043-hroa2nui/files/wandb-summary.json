@@ -1,1 +1,0 @@
-{"_wandb": {"runtime": 4}, "global_step": 6400, "_timestamp": 1696917648.5235898, "_runtime": 4.73678183555603, "_step": 1, "Sampling rollout vs time": 1.1621780395507812, "Average Value post rollouts amongst envs": -0.03171003982424736, "Average Returns post rollout amongst envs": 1.0}
