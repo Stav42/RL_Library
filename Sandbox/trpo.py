@@ -11,24 +11,28 @@ class TRPOSimulation(Simulation):
 
     def __init__(self, args):
         super().__init__(args)
+    
 
     def fisher_vector_product(self, kl, y):
-        grads = torch.autograd.grad(kl, self.policy.policy_net.parameters())
+        grads = torch.autograd.grad(kl, self.policy.policy_net.parameters(), create_graph=True, retain_graph=True)
         flat_grads = torch.cat([g.view(-1) for g in grads])
+        # print("flat_grads: ", flat_grads)
+        # print("y: ", y)
         inner_prod = flat_grads.t()@y
-        grads = torch.autograd.grad(inner_prod, self.policy.policy_net.parameters())
+        # print(inner_prod)
+        grads = torch.autograd.grad(inner_prod, self.policy.policy_net.parameters(), retain_graph=True)
         flat_grads = torch.cat([g.reshape(-1) for g in grads]).data
         return flat_grads
     
-    def cg(self, A: Callable, b: torch.Tensor, steps: int, tol: float=1e-6) -> torch.Tensor:
+    def cg(self, A: Callable, kl, b: torch.Tensor, steps: int, tol: float=1e-6) -> torch.Tensor:
         x = torch.zeros_like(b)
-        r = b - A(x)
+        r = b - A(kl, x)
         d = r.clone()
         tol_new = r.t()@r
         for _ in range(steps):
             if tol_new<tol:
                 break
-            q = A(d)
+            q = A(kl, d)
             alpha = tol_new/(d.t()@q)
             x+= alpha*d
             r-= alpha*q 
@@ -38,6 +42,7 @@ class TRPOSimulation(Simulation):
             d = r + beta*d
         return x
 
+    #http://joschu.net/blog/kl-approx.html
     def learn(self):
         b_inds = np.arange(args.batch_size)
         clipfracs = []
@@ -58,24 +63,50 @@ class TRPOSimulation(Simulation):
                 ratio = logratio.exp()
                 mb_advantages = b_gae[mb_inds]
                 pg_loss = -mb_advantages.detach()*ratio
-                
-
+                pg_loss = pg_loss.mean()
+                kl = ((ratio - 1) - logratio).mean()
                 value_loss = ((new_val - b_val[mb_inds])**2).mean()
 
-                grads = torch.autograd.grad(pg_loss, self.policy.policy_net.parameters())
+                grads = torch.autograd.grad(pg_loss, self.policy.policy_net.parameters(), retain_graph=True)
                 flatten_grads = torch.cat([g.view(-1) for g in grads]).data
-                opt_dir = self.cg(self.fisher_vector_product, -flatten_grads, args.cg_steps)
-                quad_term = (opt_dir * self.fisher_vector_product(opt_dir)).sum()
+                opt_dir = self.cg(self.fisher_vector_product, kl, -flatten_grads, args.cg_steps)
+                print(f"Opt_dir: {opt_dir.t()}")
+                quad_term = (opt_dir * self.fisher_vector_product(kl=kl, y=opt_dir)).sum(0, keepdim=True)
+                print(f"Quadratic Term: {quad_term}")
                 beta = torch.sqrt(2 * args.trust_region / (quad_term + 1e-6))
+                # print(f"Beta: {beta}")
                 opt_step = beta*opt_dir
 
                 with torch.no_grad():
-                    old_loss = 
-            
-                self.pol_optimizer.zero_grad()
-                pg_loss.backward()
-                self.pol_optimizer.step()
+                    old_loss = pg_loss
+                    params = self.get_flat_params_from(self.policy.policy_net)
+                    exp_alpha = 1
+                    params_done = False
 
+                    for i in range(self.args.line_num_search):
+                        print(f"Line Search Iteration: {i}")
+                        new_params = params + opt_step*exp_alpha
+                        # print(f"params: {params} \n opt_step: {opt_step}")
+                        _, tmp_logprob = self.sample_action(b_obs[mb_inds], b_actions[mb_inds])
+                        # print("Without setting params, tmp_logprob: ", tmp_logprob)
+                        self.set_params(params=new_params, model=self.policy.policy_net)
+                        # print("Size of mb_inds: ", len(mb_inds))
+                        _, tmp_logprob = self.sample_action(b_obs[mb_inds], b_actions[mb_inds])
+                        # print("After setting params, tmp_logprob: ", tmp_logprob)
+                        tmp_logratio = (tmp_logprob - b_logprob[mb_inds])
+                        tmp_ratio = tmp_logratio.exp()
+                        tmp_advantages = b_gae[mb_inds]
+                        tmp_loss = (-tmp_advantages.detach()*tmp_ratio).mean()
+                        tmp_kl = ((tmp_ratio - 1) - tmp_logratio).mean()
+                        improvement = -tmp_loss + old_loss
+                        if tmp_kl < 1.5*self.args.trust_region and improvement>=0 and torch.isfinite(tmp_loss):
+                            params_done = True
+                            print("Parameters changed for minibatch: ", end/args.minibatch_size)
+                            break
+                        exp_alpha = 0.5*exp_alpha
+                    if not params_done:
+                        self.set_params(params, self.policy.policy_net)
+            
                 self.val_optimizer.zero_grad()
                 value_loss.backward()
                 self.val_optimizer.step()
