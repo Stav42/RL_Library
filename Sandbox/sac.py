@@ -1,4 +1,4 @@
-from baselearner import Simulation
+from Qlearner import Simulation
 from helper import parse_args
 from typing import Callable
 import gymnasium as gym
@@ -29,7 +29,11 @@ class TRPOSimulation(Simulation):
         
         grads = torch.autograd.grad(kl, self.policy.policy_net.parameters(), create_graph=True)
         flat_grad_kl = torch.cat([g.view(-1) for g in grads])
+        # print("flat_grads: ", flat_grads)
+        # print("y: ", y)
         kl_v = (flat_grad_kl * Variable(y)).sum()
+        # inner_prod = flat_grads.t()@y
+        # print(inner_prod)
         grads = torch.autograd.grad(kl_v, self.policy.policy_net.parameters(), retain_graph=True)
         flat_grad_grad_kl = torch.cat([g.reshape(-1) for g in grads]).data
         return flat_grad_grad_kl + y*args.damping
@@ -73,14 +77,18 @@ class TRPOSimulation(Simulation):
                 b_advantages = b_gae[mb_inds]
                 pg_loss = -b_advantages.detach()*ratio
                 pg_loss = pg_loss.mean()
+                # kl = logratio.mean()
                 value_loss = ((new_val - b_val[mb_inds])**2).mean()
 
                 grads = torch.autograd.grad(pg_loss, self.policy.policy_net.parameters(), retain_graph=True)
                 flatten_grads = torch.cat([g.view(-1) for g in grads]).data
                 stepdir = self.cg(self.fisher_vector_product, inds=mb_inds, b=-flatten_grads, steps=args.cg_steps)
+                # print(f"stepdir: {stepdir.t()}")
                 shs = 0.5 * (stepdir * self.fisher_vector_product(mb_inds, stepdir)).sum(0, keepdim=True)
 
+                # print(f"Quadratic Term: {shs}")
                 beta = torch.sqrt(2 * args.trust_region / (shs + 1e-6))
+                # print(f"Beta: {beta}")
                 opt_step = beta*stepdir
 
                 with torch.no_grad():
@@ -90,10 +98,15 @@ class TRPOSimulation(Simulation):
                     params_done = False
 
                     for i in range(self.args.line_num_search):
+                        # print(f"Line Search Iteration: {i}")
                         new_params = params + opt_step*exp_alpha
+                        # print(f"params: {params} \n opt_step: {opt_step}")
                         _, tmp_logprob = self.sample_action(b_obs[mb_inds], b_actions[mb_inds])
+                        # print("Without setting params, tmp_logprob: ", tmp_logprob)
                         self.set_params(params=new_params, model=self.policy.policy_net)
+                        # print("Size of b_inds: ", len(b_inds))
                         _, tmp_logprob = self.sample_action(b_obs[mb_inds], b_actions[mb_inds])
+                        # print("After setting params, tmp_logprob: ", tmp_logprob)
                         tmp_logratio = (tmp_logprob-b_logprob[mb_inds])
                         tmp_ratio = tmp_logratio.exp()
                         tmp_advantages = b_gae[mb_inds]
@@ -102,6 +115,7 @@ class TRPOSimulation(Simulation):
                         improvement = -tmp_loss + old_loss
                         if tmp_kl < 1.5*self.args.trust_region and improvement>=0 and torch.isfinite(tmp_loss):
                             params_done = True
+                            # print("Parameters changed for minibatch: ", end/args.minibatch_size)
                             break
                         exp_alpha = 0.5*exp_alpha
                     if not params_done:
@@ -117,12 +131,10 @@ class TRPOSimulation(Simulation):
         self.global_eps=0
 
         num_upd = args.total_timesteps // args.batch_size
-        obs = self.envs.reset()
 
         for update in range(1, num_upd+1):
             print(f"Update: {update}")
             obs = self.envs.reset()
-            obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
             step_time = 0
             update_start = time.time()
             done = False
@@ -131,17 +143,24 @@ class TRPOSimulation(Simulation):
             self.global_eps+=1
             masks = torch.zeros(args.num_steps, args.num_envs)
             for step in range(0, args.num_steps):
+                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
+                self.obs_buffer[step, :] = obs_tensor
                 global_step+=1*args.num_envs
                 self.steps+=1
                 with torch.no_grad():
                     action, log_probability = self.sample_action(obs)
                 self.log_prob_buffer[step, :] = log_probability
-                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32)
-                val = self.value.forward(obs_tensor)
-                with torch.no_grad():
-                    self.value_buffer[step, :] = torch.transpose(val, 0, 1)
-                obs, reward, done, info = self.envs.step(action)
-                self.obs_buffer[step, :] = obs_tensor
+                next_obs, reward, done, info = self.envs.step(action)
+                env_index = list(np.arange(args.num_envs))
+                if done.any() == True:
+                    for index, status in enumerate(done):
+                        if status == True:
+                            self.next_obs_buffer[step, index] = info[index]['terminal_observation']
+                            self.episode_length.append(env_steps[index])
+                            env_steps[index] = 0
+                            env_index.remove(index)
+                self.next_obs_buffer[env_index] = next_obs
+                obs = next_obs
                 self.action_buffer[step, :] = action
                 for i in range(len(env_steps)):
                     env_steps[i] += 1
@@ -149,21 +168,13 @@ class TRPOSimulation(Simulation):
                 step_dur = time.time()-update_start
                 step_time+=step_dur
                 masks[step] = torch.tensor([not term for term in done])
-                if done.any() == True:
-                    for index, status in enumerate(done):
-                        if status == True:
-                            self.episode_length.append(env_steps[index])
-                            env_steps[index] = 0
-                
 
             # Rollout Finish
             step_time/=global_step
             self.eps_run+=1
             with torch.no_grad():
                 self.get_return_buffer(masks)
-                self.get_td_buffer(masks)
-                self.get_gae_buffer(lmbda=0.99, masks=masks)
-
+                self.get_qtarget_buffer(masks)
             # Buffers Done
             # Learning
             self.learn()

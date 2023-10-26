@@ -17,7 +17,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 # set device to cpu or cuda
 
-
 def make_env(gym_id, seed, rank, capture_video=None, run_name=None):
     def _init():
         env = gym.make(gym_id)
@@ -57,17 +56,17 @@ class Policy_Network(nn.Module):
 
         return action_mean, std
 
-class Value_Network(nn.Module):
+class Q_Network(nn.Module):
 
-    def __init__(self, obs_space_dims):
+    def __init__(self, obs_space_dims, action_space_dims):
         super().__init__()
 
         hidden_space1 = 16  # Nothing special with 16, feel free to change
-        hidden_space2 = 8  # Nothing special with 32, feel free to change
+        hidden_space2 = 8  # Nothing special with 8, feel free to change
 
         # Network
         self.value_net = nn.Sequential(
-            nn.Linear(obs_space_dims, hidden_space1),
+            nn.Linear(obs_space_dims+action_space_dims, hidden_space1),
             nn.Tanh(),
             nn.Linear(hidden_space1, hidden_space2),
             nn.Tanh(),
@@ -104,8 +103,15 @@ class Simulation:
         self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim).to(self.device)
         self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
 
-        self.value = Value_Network(self.obs_space_dim).to(self.device)
-        self.val_optimizer = torch.optim.AdamW(self.value.value_net.parameters(), lr=self.learning_rate)
+        self.Q1 = Q_Network(self.obs_space_dim, self.action_space_dim).to(self.device)
+        self.Q2 = Q_Network(self.obs_space_dim, self.action_space_dim).to(self.device)
+        self.Q1_target = Q_Network(self.obs_space_dim, self.action_space_dim).to(self.device)
+        self.Q2_target = Q_Network(self.obs_space_dim, self.action_space_dim).to(self.device)
+
+        self.Q1_target.load_state_dict(self.Q1.state_dict())
+        self.Q2_target.load_state_dict(self.Q2.state_dict())
+
+        self.q_optimizer = torch.optim.AdamW(list(self.Q1.value_net.parameters())+list(self.Q2.value_net.parameters()), lr=self.learning_rate)
 
         self.log_prob_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
         self.reward_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
@@ -117,6 +123,7 @@ class Simulation:
         self.td_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
         self.gae_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
         self.obs_buffer = torch.zeros((args.num_steps, args.num_envs, self.obs_space_dim)).to(self.device)
+        self.next_obs_buffer = torch.zeros((args.num_steps, args.num_envs, self.obs_space_dim)).to(self.device)
         self.action_buffer = torch.zeros((args.num_steps, args.num_envs, self.action_space_dim)).to(self.device)
         self.epsilon = 0
         self.wandb_run = None
@@ -231,23 +238,19 @@ class Simulation:
                 self.return_buffer[self.steps-i-1, :] = reward + masks[self.steps-i-1, :]*self.return_buffer[self.steps-i, :]*gamma
         return self.return_buffer
     
-    def get_gae_buffer(self, lmbda, masks):
+    def get_qtarget_buffer(self, masks):
         gamma = self.gamma
-        l = self.steps
-        for i in range(l):
-            if i == 0:
-                self.gae_buffer[l-i-1][:] = self.td_buffer[l-i-1][:]
-            else:
-                self.gae_buffer[l-i-1][:] = self.td_buffer[l-i-1][:].clone() + masks[l-i-1, :]*lmbda*gamma*self.gae_buffer[l-i][:].clone().detach()
-        return self.gae_buffer
-
-    def get_td_buffer(self, masks):
-        gamma = self.gamma
-        for i, rew in enumerate(self.reward_buffer[:self.steps, :]):
+        for i, rew in enumerate(self.reward_buffer[:self.steps, 0]):
+            next_action, next_state_log_pi = self.sample_action(self.next_obs_buffer[i])
+            Q1_next_target = self.Q1_target(self.next_obs_buffer[i], next_action)
+            Q2_next_target = self.Q2_target(self.next_obs_buffer[i], next_action)
+            min_Q_next_target  = torch.min(Q1_next_target, Q2_next_target) - self.args.alpha*next_state_log_pi
+            Q1_next_target = self.reward_buffer[i, :] + masks[i, :]
+            
             if i == self.reward_buffer.size()[0]-1:
-                self.td_buffer[i, :] = self.reward_buffer[i, :] - self.value_buffer[i, :].detach()
+                self.td_buffer[i, :] = rew - self.value_buffer[i, :].detach()
             else:
-                self.td_buffer[i, :] = self.reward_buffer[i, :] + masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
+                self.td_buffer[i, :] = rew + masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
         return self.td_buffer
     
     def log_data(self):

@@ -245,11 +245,11 @@ class Simulation:
 
     def get_td_buffer(self, masks):
         gamma = self.gamma
-        for i, rew in enumerate(self.reward_buffer[:self.steps, 0]):
+        for i, rew in enumerate(self.reward_buffer[:self.steps, :]):
             if i == self.reward_buffer.size()[0]-1:
-                self.td_buffer[i, :] = rew - self.value_buffer[i, :].detach()
+                self.td_buffer[i, :] = self.reward_buffer[i, :] - self.value_buffer[i, :].detach()
             else:
-                self.td_buffer[i, :] = rew + masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
+                self.td_buffer[i, :] = self.reward_buffer[i, :] + masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
         return self.td_buffer
     
     def log_data(self):
