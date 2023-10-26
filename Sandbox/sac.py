@@ -12,7 +12,6 @@ class SACSimulation(Simulation):
     def __init__(self, args):
         super().__init__(args)
 
-    #http://joschu.net/blog/kl-approx.html
     def learn(self):
         b_inds = np.arange(args.batch_size)
         b_obs = self.obs_buffer.reshape((-1,) + self.envs.observation_space.shape)
