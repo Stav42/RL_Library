@@ -31,6 +31,9 @@ def parse_args():
     parser.add_argument("--line-num-search", type=int, default=10, help="Iterations to converge to alpha_i")
     parser.add_argument("--damping", type=float, default=1e-3)
     parser.add_argument("--alpha", type=float, default=0.2, help="Entropy regularization coefficient")
+    parser.add_argument("--pol-freq", type=int, default=2, help="Frequency of updating policy")
+    parser.add_argument("--target-update-freq", type=int, default=1, help="Target update frequency")
+    parser.add_argument("--tau", type=float, default=0.005, help="target smoothing coefficient")
     
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)

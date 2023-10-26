@@ -124,6 +124,7 @@ class Simulation:
         self.gae_buffer = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
         self.obs_buffer = torch.zeros((args.num_steps, args.num_envs, self.obs_space_dim)).to(self.device)
         self.next_obs_buffer = torch.zeros((args.num_steps, args.num_envs, self.obs_space_dim)).to(self.device)
+        self.next_target = torch.zeros((args.num_steps, args.num_envs)).to(self.device)
         self.action_buffer = torch.zeros((args.num_steps, args.num_envs, self.action_space_dim)).to(self.device)
         self.epsilon = 0
         self.wandb_run = None
@@ -241,17 +242,23 @@ class Simulation:
     def get_qtarget_buffer(self, masks):
         gamma = self.gamma
         for i, rew in enumerate(self.reward_buffer[:self.steps, 0]):
+            # print(f"Next Obs: {self.next_obs_buffer[i]}")
             next_action, next_state_log_pi = self.sample_action(self.next_obs_buffer[i])
-            Q1_next_target = self.Q1_target(self.next_obs_buffer[i], next_action)
-            Q2_next_target = self.Q2_target(self.next_obs_buffer[i], next_action)
+            # print(f"next_action: {next_action}")
+            # print(f"next_state_log_pi: {next_state_log_pi}")
+            concat = torch.cat((next_action, self.next_obs_buffer[i]), dim=1)
+            # print(f"Concatenated list: ", concat)
+            Q1_next_target = self.Q1_target(concat).reshape(-1)
+            # print(f"Q1_next_target: {Q1_next_target}")
+            Q2_next_target = self.Q2_target(concat).reshape(-1)
+            # print(f"Q2_next_target: {Q2_next_target}")
             min_Q_next_target  = torch.min(Q1_next_target, Q2_next_target) - self.args.alpha*next_state_log_pi
-            Q1_next_target = self.reward_buffer[i, :] + masks[i, :]
-            
-            if i == self.reward_buffer.size()[0]-1:
-                self.td_buffer[i, :] = rew - self.value_buffer[i, :].detach()
-            else:
-                self.td_buffer[i, :] = rew + masks[i, :]*gamma*self.value_buffer[i+1, :].detach() - self.value_buffer[i, :].detach()
-        return self.td_buffer
+            # print(f"min_Q_next_target: {min_Q_next_target}")
+            # print(f"masks: {masks[i]}")
+            Q_next_target = self.reward_buffer[i, :] + masks[i, :]*gamma*min_Q_next_target
+            # print(f"Q1_next_target: {Q_next_target}")
+            self.next_target[i, :] = Q_next_target
+        return self.next_target
     
     def log_data(self):
         mean_rew = np.array(self.reward_buffer.cpu()).sum()
