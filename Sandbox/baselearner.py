@@ -175,6 +175,12 @@ class Simulation:
             save_code=True,
         )
 
+    def action_gaussian(self, obs):
+        obs = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
+        mean, dev = self.policy.forward(obs)
+        log_dev = torch.log(dev)
+        return mean, dev, log_dev       
+
     def sample_action(self, obs, action=None):
         obs = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
         mean, dev = self.policy.forward(obs)
