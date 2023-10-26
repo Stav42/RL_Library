@@ -148,7 +148,18 @@ class Simulation:
             "Hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(self.args).items()]))
         )
 
+    def get_flat_params_from(self, model: torch.nn.Module):
+        return torch.cat([p.data.view(-1) for p in model.parameters()])
     
+    #https://github.com/alirezakazemipour/TRPO-PyTorch/blob/main/common/utils.py
+    def set_params(self, params: torch.nn.Module.parameters, model: torch.nn.Module):
+        # print(f"Old Params are: {model.parameters()}")
+        # print(f"New Params: {params}")
+        pointer = 0
+        for p in model.parameters():
+            p.data.copy_(params[pointer:pointer+p.data.numel()].view_as(p.data))
+            pointer += p.data.numel()
+
     def wandb_init(self):
         current_time_seconds = time.time()
         current_datetime = datetime.fromtimestamp(current_time_seconds)
@@ -164,6 +175,11 @@ class Simulation:
             save_code=True,
         )
 
+    def action_gaussian(self, obs):
+        obs = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
+        mean, dev = self.policy.forward(obs)
+        log_dev = torch.log(dev)
+        return mean, dev, log_dev
 
     def sample_action(self, obs, action=None):
         obs = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)

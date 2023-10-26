@@ -26,6 +26,10 @@ def parse_args():
     parser.add_argument("--clip-coef", type=float, default=0.2,
         help="the surrogate clipping coefficient")
     parser.add_argument("--cuda", type=bool, default=False, help="Toggle CUDA if available")
+    parser.add_argument("--cg-steps", type=int, default=10, help="Number of iterations for Conjugate Gradient")
+    parser.add_argument("--trust-region", type=float, default=0.001, help="Trust Region delta")
+    parser.add_argument("--line-num-search", type=int, default=10, help="Iterations to converge to alpha_i")
+    parser.add_argument("--damping", type=float, default=1e-3)
     
     args = parser.parse_args()
     args.batch_size = int(args.num_envs * args.num_steps)
