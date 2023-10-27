@@ -154,7 +154,7 @@ class TRPOSimulation(Simulation):
                 val = self.value.forward(obs_tensor)
                 with torch.no_grad():
                     self.value_buffer[step, :] = torch.transpose(val, 0, 1)
-                obs, reward, done, info = self.envs.step(action)
+                obs, reward, done, info = self.envs.step(np.array(action))
                 self.obs_buffer[step, :] = obs_tensor
                 self.action_buffer[step, :] = action
                 for i in range(len(env_steps)):

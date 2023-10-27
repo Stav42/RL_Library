@@ -12,6 +12,7 @@ from distutils.util import strtobool
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 import wandb
 from helper import parse_args
+from stable_baselines3.common.env_util import make_vec_env
 import datetime
 from torch.utils.tensorboard import SummaryWriter
 
@@ -86,6 +87,8 @@ class Simulation:
         self.num_cpu = 16
         self.args = args
         self.envs = SubprocVecEnv([make_env(self.args.gym_id, seed=i, rank=i) for i in range(self.args.num_envs)])
+        self.envs = make_vec_env(self.args.gym_id, n_envs=args.num_envs, vec_env_cls=SubprocVecEnv)
+        print("Environment Made")
         self.learning_rate = 1e-4
         self.gamma = 0.99
         self.eps = 1e-6

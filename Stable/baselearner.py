@@ -21,7 +21,6 @@ from torch.utils.tensorboard import SummaryWriter
 def make_env(gym_id, seed, rank, capture_video=None, run_name=None):
     def _init():
         env = gym.make(gym_id)
-        env = gym.wrappers.RecordEpisodeStatistics(env)
         if capture_video:
                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         env.reset(seed=seed+rank)
@@ -82,7 +81,8 @@ class Simulation:
     
     def __init__(self, args, render=False):
 
-        self.env_id = "InvertedPendulum-v4"
+        self.env_id = "Ant-v4"
+        # args.gym_id = "Ant-v4"
         self.num_cpu = 16
         self.args = args
         self.envs = SubprocVecEnv([make_env(self.args.gym_id, seed=i, rank=i) for i in range(self.args.num_envs)])

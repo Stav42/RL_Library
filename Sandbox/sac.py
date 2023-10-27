@@ -30,7 +30,6 @@ class SACSimulation(Simulation):
 
                 # print(f"b_actions[mb_inds][0]: {b_actions[mb_inds[0]]}")
                 # print(f"b_observation[mb_inds][0]: {b_obs[mb_inds[0]]}")
-
                 concat = torch.cat((b_actions[mb_inds], b_obs[mb_inds]), dim=1)
                 # print(f"Concatenated list: ", concat[0])
                 Q1_values = self.Q1(concat).reshape(-1)
@@ -113,6 +112,7 @@ class SACSimulation(Simulation):
                 step_dur = time.time()-update_start
                 step_time+=step_dur
                 masks[step] = torch.tensor([not term for term in done])
+    
 
             # Rollout Finish
             step_time/=global_step

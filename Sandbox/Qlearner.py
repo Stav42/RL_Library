@@ -213,12 +213,18 @@ class Simulation:
         self.value_buffer       *= 0
         self.td_buffer          *= 0
         self.gae_buffer         *= 0
+        self.next_obs_buffer    *= 0
+        self.obs_buffer         *= 0
+        self.action_buffer      *= 0
         self.log_prob_buffer = self.log_prob_buffer.detach()
         self.reward_buffer = self.reward_buffer.detach()
         self.return_buffer = self.return_buffer.detach()
         self.value_buffer = self.value_buffer.detach()
         self.td_buffer = self.td_buffer.detach()
         self.gae_buffer = self.gae_buffer.detach()
+        self.next_obs_buffer = self.next_obs_buffer.detach()
+        self.obs_buffer = self.obs_buffer.detach()
+        self.action_buffer = self.action_buffer.detach()
         
 
     def flush_post_iter(self):
