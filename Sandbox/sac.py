@@ -43,22 +43,27 @@ class SACSimulation(Simulation):
                 # print("Q_loss: ", Q_loss)
 
                 self.q_optimizer.zero_grad()
-                Q_loss.backward(retain_graph=True)
+                Q_loss.backward()
                 self.q_optimizer.step()
 
                 if i%args.pol_freq == 0:
                     for _ in range(args.pol_freq):
                         # print("Policy Update")
-                        action, log_prob = self.sample_action(b_obs[mb_inds])
+                        action, log_prob, mean = self.sample_action(b_obs[mb_inds])
                         concat = torch.cat((action, b_obs[mb_inds]), dim=1)
                         Q1_pi = self.Q1(concat)
                         Q2_pi = self.Q2(concat)
-                        min_Q_pi = torch.min(Q1_pi, Q2_pi)
-                        actor_loss = ((args.alpha*log_prob)-min_Q_pi).mean()
+                        min_Q_pi = torch.min(Q1_pi, Q2_pi).reshape(-1)
+                        int_val = args.alpha*log_prob - min_Q_pi
+                        # print("Log Probability: ", log_prob, "Shape: ", log_prob.shape)
+                        # print("min_Q_Pi: ", min_Q_pi, " Shape: ", min_Q_pi.shape)
+                        # print("Intermediate value: ", int_val, " Shape: ", int_val.shape)
+                        actor_loss = int_val.mean()
                         # print("Actor Loss: ", actor_loss)
                         self.pol_optimizer.zero_grad()
-                        actor_loss.backward(retain_graph=True)
+                        actor_loss.backward()
                         self.pol_optimizer.step()
+                        # print("Policy Updated")
 
                 if i%args.target_update_freq == 0:
                     # print("Target Update")
@@ -80,7 +85,6 @@ class SACSimulation(Simulation):
             obs = self.envs.reset()
             step_time = 0
             update_start = time.time()
-            done = False
             self.steps = 0
             env_steps = [0]*args.num_envs
             self.global_eps+=1
@@ -92,7 +96,7 @@ class SACSimulation(Simulation):
                 global_step+=1*args.num_envs
                 self.steps+=1
                 with torch.no_grad():
-                    action, log_probability = self.sample_action(obs)
+                    action, log_probability, mean = self.sample_action(obs)
                 self.log_prob_buffer[step, :] = log_probability
                 next_obs, reward, done, info = self.envs.step(action)
                 env_index = list(np.arange(args.num_envs))

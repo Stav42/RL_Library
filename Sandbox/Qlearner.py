@@ -14,7 +14,10 @@ import wandb
 from helper import parse_args
 import datetime
 from torch.utils.tensorboard import SummaryWriter
+import torch.functional as F 
 
+LOG_STD_MAX = 2
+LOG_STD_MIN = -5
 # set device to cpu or cuda
 
 def make_env(gym_id, seed, rank, capture_video=None, run_name=None):
@@ -43,18 +46,19 @@ class Policy_Network(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_space1, hidden_space2),
             nn.Tanh(),
-            nn.Linear(hidden_space2, action_space_dims)
         )
 
-        log_std = -0.5 * np.ones(action_space_dims, dtype=np.float32)
-        self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
+        self.fc_mean = nn.Linear(hidden_space2, action_space_dims)
+        self.fc_logstd = nn.Linear(hidden_space2, action_space_dims)
         
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        action_mean = self.policy_net(x)
-        std = torch.exp(self.log_std)   
+        hidden_val = self.policy_net(x)
+        mean = self.fc_mean(hidden_val)
+        log_std = self.fc_logstd(hidden_val)
+        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)
 
-        return action_mean, std
+        return mean, log_std
 
 class Q_Network(nn.Module):
 
@@ -99,6 +103,10 @@ class Simulation:
         
         self.obs_space_dim = self.envs.observation_space.shape[0]
         self.action_space_dim = self.envs.action_space.shape[0]
+        self.action_high = self.envs.action_space.high
+        self.action_low = self.envs.action_space.low
+        self.action_scale = (self.action_high - self.action_low)/2.0
+        self.action_bias = (self.action_high+self.action_low)/2.0
 
         self.policy = Policy_Network(self.obs_space_dim, self.action_space_dim).to(self.device)
         self.pol_optimizer = torch.optim.AdamW(self.policy.policy_net.parameters(), lr=self.learning_rate)
@@ -189,14 +197,23 @@ class Simulation:
         log_dev = torch.log(dev)
         return mean, dev, log_dev
 
+    # https://github.com/vwxyzjn/cleanrl/blob/master/cleanrl/sac_continuous_action.py#L131
     def sample_action(self, obs, action=None):
         obs = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
-        mean, dev = self.policy.forward(obs)
-        distrib = Normal(mean, dev)
-        if action is None:
-            action = distrib.sample()
-        logp = distrib.log_prob(action).sum(axis=-1)
-        return action, logp
+        mean, log_std = self.policy.forward(obs)
+        std = log_std.exp()
+        distrib = Normal(mean, std)
+        x_t = distrib.rsample()
+        y_t = torch.tanh(x_t)
+        action = y_t*self.action_scale + self.action_bias
+        log_prob = distrib.log_prob(x_t)
+
+        # Enforcing action bounds
+        log_prob -= torch.log(torch.tensor(self.action_scale) * (1 - y_t.pow(2)) + 1e-6)
+        log_prob = log_prob.sum(1, keepdim=True)
+
+        mean = torch.tanh(mean)*self.action_scale + self.action_bias
+        return action, log_prob, mean
     
     def save_model(self, path):
         path = path + "/Cartpole_PPO.pth"
